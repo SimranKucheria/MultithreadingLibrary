@@ -1,6 +1,6 @@
 #include "thread.h"
 typedef struct nodeq{
-	thread_t * thread;
+	thread_s * thread;
 	struct nodeq * next;
 }nodeq;
 
@@ -9,8 +9,9 @@ typedef struct queue{
 	nodeq * tail;
 }queue;
 
-void enqueue(queue * q,  thread_t * thread); 
-thread_t *  dequeue(queue * q);  
+void enqueue(queue * q,  thread_s * thread); 
+thread_s *  dequeue(queue * q);  
 int isQfull(queue * q);
 int isQempty(queue * q);
 void initq(queue * q);
+thread_s * getthread(queue * q, thread_t thread);

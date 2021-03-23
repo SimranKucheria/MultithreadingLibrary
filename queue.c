@@ -2,7 +2,7 @@
 #include<stdlib.h>
 #include<stdio.h>
 
-void enqueue(queue * q, thread_t * thread){
+void enqueue(queue * q, thread_s * thread){
 	nodeq * newnode=(nodeq *)malloc(sizeof(nodeq));
 	newnode->thread=thread;
 	newnode->next=NULL;
@@ -23,12 +23,12 @@ void enqueue(queue * q, thread_t * thread){
 	}
 }
 
-thread_t *dequeue(queue * q){
+thread_s *dequeue(queue * q){
 	if(q->head==NULL){
 		return 0;
 	}
 	else{
-		thread_t * x=0;
+		thread_s * x=0;
 		nodeq * temp;
 		x=q->head->thread;
 		temp=q->head;
@@ -50,5 +50,24 @@ void initq(queue * q){
 	q->tail=NULL;
 }
 
+thread_s * getthread(queue * q, thread_t thread){
+	nodeq * temp;
+	temp=q->head;
+	if(temp==NULL){
+		return 0;
+	}
+	if(!isQempty(q)){
+		do{
+			if (thread==temp->thread->t_id){
+				return temp->thread;
+			}
+			temp=temp->next;
+		}while(temp!=q->tail);
+	}
+	return NULL;
+}
+		
+			
+	
 	
 	
