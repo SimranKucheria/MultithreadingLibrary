@@ -3,8 +3,9 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include <unistd.h>
+
 typedef enum states{
-    RUNNING,RUNNABLE,SLEEPING,WAITING
+    RUNNING,RUNNABLE,SLEEPING,WAITING,KILL
 }states;
 
 typedef struct thread{
@@ -12,7 +13,7 @@ typedef struct thread{
     pid_t t_id;
 
     /*stack for thread*/
-    char stack[1024*128];
+    char * stack;
 
     /*context of the thread */
     ucontext_t context;
@@ -30,9 +31,9 @@ typedef struct thread{
     void * ret;
 }thread_t;
 
-void get_id(thread_t *);
-// void * thread_init();
-int thread_create(thread_t *thread,void *(*start_routine) (void *), void *arg); // provide option to use a desired mapping.
+
+int thread_create(thread_t *,void *(*) (void *), void *); // provide option to use a desired mapping.
+//int thread_create(thread_t *thread,const pthread_attr_t *attr,void *(*start_routine) (void *), void *arg);//after defining attr structure use this definition
 // int thread_join(thread_t thread, void **retval);
 // void thread_exit(void *retval);
 // int thread_lock(); // a spinlock

@@ -3,7 +3,7 @@
 #include<stdio.h>
 
 void enqueue(queue * q, thread_t * thread){
-	node * newnode=(node *)malloc(sizeof(node));
+	nodeq * newnode=(nodeq *)malloc(sizeof(nodeq));
 	newnode->thread=thread;
 	newnode->next=NULL;
 	if(!newnode){
@@ -29,7 +29,7 @@ thread_t *dequeue(queue * q){
 	}
 	else{
 		thread_t * x=0;
-		node * temp;
+		nodeq * temp;
 		x=q->head->thread;
 		temp=q->head;
 		q->head=q->head->next;
