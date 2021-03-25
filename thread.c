@@ -88,7 +88,7 @@ int thread_join(thread_t thread, void ** retval){
 			return EINVAL;
 		}
 		// waitpid(thread,NULL,__WCLONE);
-        wait(&thread);
+        waitpid(thread,NULL,0);
 		retthread->state=TERMINATED;
 		if (retval){
 			*retval=retthread->ret;
@@ -110,12 +110,24 @@ void *func(){
     
 }
 
+
+void *newfunc(){
+    //sleep(10);
+    printf("%d ",getpid());
+    printf("%s\n\n\n\n", "hi3");
+    // sleep(10);
+    
+}
+
 int main()
 {
     
-    thread_t thread;
-    thread_create(&thread, func, NULL);
-    thread_join(thread,NULL);
+    thread_t thread1,thread2;
+    thread_create(&thread1, func, NULL);
+    thread_create(&thread2, newfunc, NULL);
+    thread_join(thread1,NULL);
+    thread_join(thread2,NULL);
+    printf("WHy");
 }
 
 #endif
