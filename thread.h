@@ -5,7 +5,7 @@
 #include <unistd.h>
 
 typedef enum states{
-    RUNNING,RUNNABLE,SLEEPING,WAITING,KILL,TERMINATED
+    RUNNING,RUNNABLE,SLEEPING,WAITING,EXITED,SUSPENDED
 }states;
 
 typedef pid_t thread_t;
@@ -40,7 +40,7 @@ typedef struct threadlock{
 int thread_create(thread_t *,void *(*) (void *), void *); // provide option to use a desired mapping.
 //int thread_create(thread_t *thread,const pthread_attr_t *attr,void *(*start_routine) (void *), void *arg);//after defining attr structure use this definition
 int thread_join(thread_t thread, void **retval);
-// void thread_exit(void *retval);
+void thread_exit(void *retval);
 int initlock(threadlock lock);
 int thread_lock(threadlock lock);
 int thread_unlock(threadlock lock);  
