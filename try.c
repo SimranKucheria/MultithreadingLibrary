@@ -18,13 +18,15 @@ void *newfunc(){
 
 int main()
 {
-    int ret;
-    thread_t thread1,thread2;
-    thread_create(&thread1, func, NULL);
-   // thread_create(&thread2, newfunc, NULL);
+    // int ret;
+    pthread_t thread1,thread2;
+    void *status;
+    // thread_create(&thread1, NULL,func, NULL);
+    pthread_create(&thread2, NULL, newfunc, NULL);
+    pthread_join(thread2, &status);
     //printf("")
-    thread_join(thread1,(void *)&ret);
-    printf("thread exited with '%d'\n",ret);
+    //thread_join(thread1,(void *)&ret);
+    printf("%d\n",(int)status); 
     
     printf("WHy");
 }
