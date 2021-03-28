@@ -44,4 +44,4 @@ void thread_exit(void *retval);
 int initlock(threadlock lock);
 int thread_lock(threadlock lock);
 int thread_unlock(threadlock lock);  
-// int thread_kill(thread_t thread, int sig);
+int thread_kill(thread_t thread, int sig);

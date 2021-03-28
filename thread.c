@@ -17,17 +17,14 @@
 #include <ucontext.h>
 #include <sys/time.h>
 #include <sys/resource.h>
+#define TGKILL 270
 
 #define STACKSIZE ((size_t)8192 * 1024)
 char *stackTop;
 queue *q;
 static int flag = 0;
 threadlock* lock;
-/* something along these lines needs to be implemented
-1. Allocate stack space for each thread 
-2. Stack +stacksize is done because s
-tack grows downwards
- */
+
 int initlock(threadlock lock){
 	lock.value=0;
 	return 0;
@@ -76,8 +73,7 @@ int thread_create(thread_t *thread, void *(*start_routine)(void *), void *arg){
     t->arg = arg;
     t->state = RUNNING;
     t->t_id = clone((int(*)(void*))setretval, stackTop,CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_SIGHAND|SIGCHLD,(void *)t);
-    // printf("%d ",getpid());
-    
+    //t->t_id=clone((int(*)(void*))setretval, stackTop,CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_SIGHAND|SIGCHLD|CLONE_THREAD,(void *)t);
     if (t->t_id == -1)
     {
         free(t->stack);
@@ -85,7 +81,7 @@ int thread_create(thread_t *thread, void *(*start_routine)(void *), void *arg){
         thread_unlock(*lock);
         return EAGAIN;
     }
-    // printf("%s", stackTop);
+  
     enqueue(q, t);
     *thread=t->t_id;
     thread_unlock(*lock);
@@ -94,14 +90,14 @@ int thread_create(thread_t *thread, void *(*start_routine)(void *), void *arg){
 int thread_join(thread_t thread, void ** retval){
 	thread_lock(*lock);
 	thread_s *retthread;
-        //siginfo_t info;
 	retthread=getthread(q,thread);
 	if (retthread){
 		if (retthread->state==SUSPENDED){
 			thread_unlock(*lock);
 			return EINVAL;
 		}
-        	waitpid(thread,NULL,0);
+        waitpid(thread,NULL,0);
+        //pause();
 		retthread->state=SUSPENDED;
 		if (retval){
                     *retval=retthread->ret;
@@ -132,8 +128,27 @@ void thread_exit(void *retval){
             thread_unlock(*lock);
 	     return ;
         }
+}
+int thread_kill(thread_t thread, int sig){
+
+    thread_s *retthread;
+    retthread=getthread(q,thread);
+    pid_t p_id=getpid();
+    printf("%d",p_id);
+    if(!retthread){
+        return  ESRCH;
+    }
+    else{
+        if(sig){
+                int ret = syscall(SYS_tgkill, p_id, thread, sig);
+                if (ret != 0){
+                    perror("kill");
+                }
+        }
+    }
 
 }
+
 void *func(){
     printf("%s","hi");
    // char *ret;
@@ -148,11 +163,9 @@ void *func(){
 
 
 void *newfunc(){
-    //sleep(10);
+    // sleep(10);
     printf("%d ",getpid());
     printf("%s\n\n\n\n", "hi3");
-    
-    // sleep(10);
     return (void *)50;
 }
 void *thread(void *arg) {
@@ -170,8 +183,10 @@ int main()
 {
     void *status;
     thread_t thread1;
-    thread_create(&thread1, thread, NULL);
+    thread_create(&thread1,newfunc, NULL);
     thread_join(thread1,&status);   
+    printf("%d",(int)status);
+    // thread_kill(thread1,SIGINT);
     return 0;
 }
 

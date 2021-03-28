@@ -1,2 +1,2 @@
 thread: thread.o
-	cc thread.h thread.c -o thread
+	cc thread.h thread.c -o thread.o
