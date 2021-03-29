@@ -30,6 +30,9 @@ typedef struct thread_s{
 
     /*return value of the thread */
     void * ret;
+    
+    /*Value to wait for thread*/
+    pid_t waittid;
 }thread_s;
 
 typedef struct threadlock{

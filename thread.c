@@ -17,6 +17,9 @@
 #include <ucontext.h>
 #include <sys/time.h>
 #include <sys/resource.h>
+#include <linux/futex.h>
+#include <sys/time.h>
+
 #define TGKILL 270
 
 #define STACKSIZE ((size_t)8192 * 1024)
@@ -72,8 +75,10 @@ int thread_create(thread_t *thread, void *(*start_routine)(void *), void *arg){
     t->start_routine = start_routine;
     t->arg = arg;
     t->state = RUNNING;
-    t->t_id = clone((int(*)(void*))setretval, stackTop,CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_SIGHAND|SIGCHLD,(void *)t);
-    //t->t_id=clone((int(*)(void*))setretval, stackTop,CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_SIGHAND|SIGCHLD|CLONE_THREAD,(void *)t);
+   // t->t_id = clone((int(*)(void*))setretval, stackTop,CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_SIGHAND|SIGCHLD,(void *)t);
+     t->t_id = clone((int(*)(void*))setretval, stackTop,CLONE_VM | CLONE_FS | CLONE_FILES |
+      CLONE_THREAD |CLONE_SIGHAND | 
+      CLONE_PARENT_SETTID | CLONE_CHILD_CLEARTID|CLONE_SETTLS,(void *)t,&t->waittid,t,&t->waittid);
     if (t->t_id == -1)
     {
         free(t->stack);
@@ -96,14 +101,19 @@ int thread_join(thread_t thread, void ** retval){
 			thread_unlock(*lock);
 			return EINVAL;
 		}
-        waitpid(thread,NULL,0);
-        //pause();
+		while(1){
+			if(retthread->waittid==0){
+				break;
+			}
+		}
 		retthread->state=SUSPENDED;
 		if (retval){
-                    *retval=retthread->ret;
-                     return 0;
+			//printf("%d",(int)retthread->ret);
+			*retval=retthread->ret;
+			thread_unlock(*lock);
+		        return 0;
 		}
-		//Do we need to remove from queue
+			//Do we need to remove from queue
 	}
 	else{
 		thread_unlock(*lock);
@@ -130,11 +140,9 @@ void thread_exit(void *retval){
         }
 }
 int thread_kill(thread_t thread, int sig){
-
     thread_s *retthread;
     retthread=getthread(q,thread);
     pid_t p_id=getpid();
-    printf("%d",p_id);
     if(!retthread){
         return  ESRCH;
     }
