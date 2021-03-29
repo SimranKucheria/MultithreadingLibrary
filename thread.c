@@ -17,11 +17,9 @@
 #include <ucontext.h>
 #include <sys/time.h>
 #include <sys/resource.h>
-#include <linux/futex.h>
 #include <sys/time.h>
 
 #define TGKILL 270
-
 #define STACKSIZE ((size_t)8192 * 1024)
 char *stackTop;
 queue *q;
@@ -78,7 +76,7 @@ int thread_create(thread_t *thread, void *(*start_routine)(void *), void *arg){
    // t->t_id = clone((int(*)(void*))setretval, stackTop,CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_SIGHAND|SIGCHLD,(void *)t);
      t->t_id = clone((int(*)(void*))setretval, stackTop,CLONE_VM | CLONE_FS | CLONE_FILES |
       CLONE_THREAD |CLONE_SIGHAND | 
-      CLONE_PARENT_SETTID | CLONE_CHILD_CLEARTID|CLONE_SETTLS,(void *)t,&t->waittid,t,&t->waittid);
+      CLONE_PARENT_SETTID| CLONE_CHILD_CLEARTID |CLONE_SETTLS,(void *)t,&t->waittid,t,&t->waittid);
     if (t->t_id == -1)
     {
         free(t->stack);
@@ -106,6 +104,7 @@ int thread_join(thread_t thread, void ** retval){
 				break;
 			}
 		}
+      
 		retthread->state=SUSPENDED;
 		if (retval){
 			//printf("%d",(int)retthread->ret);
@@ -157,6 +156,9 @@ int thread_kill(thread_t thread, int sig){
 
 }
 
+#include<stdio.h>
+#include<stdlib.h>
+#include"string.h"
 void *func(){
     printf("%s","hi");
    // char *ret;
@@ -174,6 +176,8 @@ void *newfunc(){
     // sleep(10);
     printf("%d ",getpid());
     printf("%s\n\n\n\n", "hi3");
+    
+    // sleep(10);
     return (void *)50;
 }
 void *thread(void *arg) {
@@ -197,5 +201,6 @@ int main()
     // thread_kill(thread1,SIGINT);
     return 0;
 }
+
 
 #endif
