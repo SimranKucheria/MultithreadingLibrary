@@ -27,12 +27,10 @@ int gettid()
 {
     return id++;
 }
-void setretval(void *t)
+void setretval(void)
 {
-    thread_s *thread;
-    thread = (thread_s *)t;
-    thread->ret = thread->start_routine(thread->arg);
-    thread_exit(thread->ret);
+    current_thread->ret = current_thread->start_routine(current_thread->arg);
+    thread_exit(current_thread->ret);
 }
 void scheduler()
 {
@@ -44,6 +42,7 @@ void scheduler()
 
     if (current_thread)
     {
+        //printf("%d", current_thread->state);
         if (current_thread->state != EXITED)
         {
             current_thread->state = RUNNABLE;
@@ -57,6 +56,7 @@ void scheduler()
     t = dequeue(readyqueue);
     if (t != NULL)
     {
+        printf("ThreadID %d", t->t_id);
         current_thread = t;
         t->state = RUNNING;
         setcontext(&t->context);
@@ -65,7 +65,7 @@ void scheduler()
     }
     else
     {
-        exit(0);
+        alarm(0);
     }
 }
 /*function gets called initially*/
@@ -103,20 +103,22 @@ int thread_create(thread_t *thread, void *(*start_routine)(void *), void *arg)
     t->context.uc_stack.ss_sp = (char *)malloc(STACKSIZE);
     t->context.uc_stack.ss_size = 8192 * 1024;
     t->context.uc_stack.ss_flags = 0;
-    alarm(2);
-    enqueue(readyqueue, t);
     makecontext(&t->context, (void (*)(void))setretval, 1, (void *)t);
+    enqueue(readyqueue, t);
     *thread = t->t_id;
+    alarm(2);
     return 0;
 }
 int thread_join(thread_t thread, void **retval)
 {
     alarm(0);
+    fprintf(stderr, "Injoin");
     thread_s *retthread;
 
     if (current_thread && current_thread->t_id == thread)
     {
         alarm(2);
+        fprintf(stderr, "hello");
         return EDEADLK;
     }
 
@@ -140,7 +142,6 @@ int thread_join(thread_t thread, void **retval)
         {
             //printf("%d",(int)retthread->ret);
             *retval = retthread->ret;
-
             return 0;
         }
         //Do we need to remove from queue
@@ -156,66 +157,12 @@ int thread_join(thread_t thread, void **retval)
 void thread_exit(void *retval)
 {
     alarm(0);
-#ifdef SYS_gettid
-    thread_t thread = syscall(SYS_gettid);
-#endif
-    thread_s *retthread;
-    retthread = getthread(readyqueue, thread);
-    if (retthread)
+    if (current_thread)
     {
-        retthread->state = EXITED;
-        retthread->ret = retval;
+        current_thread->state = EXITED;
+        current_thread->ret = retval;
     }
     raise(SIGALRM);
     return;
 }
 #endif
-
-#include <stdio.h>
-#include <stdlib.h>
-#include "string.h"
-void *func()
-{
-    printf("%s", "hi");
-    // char *ret;
-    //if ((ret = (char*) malloc(20)) == NULL) {
-    //   perror("malloc() error");
-    //    exit(2);
-    //}
-    //strcpy(ret, "This is a test");
-    //printf("%s",ret);
-    //thread_exit(ret);
-}
-
-void *newfunc()
-{
-    // sleep(10);
-    printf("%d ", getpid());
-    printf("%s\n\n\n\n", "hi3");
-
-    // sleep(10);
-    return (void *)50;
-}
-void *thread(void *arg)
-{
-    char *ret;
-
-    if ((ret = (char *)malloc(20)) == NULL)
-    {
-        perror("malloc() error");
-        exit(2);
-    }
-    strcpy(ret, "This is a test");
-    thread_exit(ret);
-}
-
-int main()
-{
-    void *status;
-    thread_t thread1;
-    thread_create(&thread1, newfunc, NULL);
-    thread_join(thread1, &status);
-    printf("%d", (int)status);
-    // thread_kill(thread1,SIGINT);
-    return 0;
-}
