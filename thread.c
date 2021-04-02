@@ -75,7 +75,7 @@ int thread_create(thread_t *thread, void *(*start_routine)(void *), void *arg){
     t->state = RUNNING;
    // t->t_id = clone((int(*)(void*))setretval, stackTop,CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_SIGHAND|SIGCHLD,(void *)t);
      t->t_id = clone((int(*)(void*))setretval, stackTop,CLONE_VM | CLONE_FS | CLONE_FILES |
-      CLONE_THREAD |CLONE_SIGHAND | 
+      CLONE_SIGHAND | CLONE_THREAD |
       CLONE_PARENT_SETTID| CLONE_CHILD_CLEARTID |CLONE_SETTLS,(void *)t,&t->waittid,t,&t->waittid);
     if (t->t_id == -1)
     {
@@ -95,7 +95,7 @@ int thread_join(thread_t thread, void ** retval){
 	thread_s *retthread;
 	retthread=getthread(q,thread);
 	if (retthread){
-		if (retthread->state==SUSPENDED){
+		if (retthread->state==EXITED){
 			thread_unlock(*lock);
 			return EINVAL;
 		}
@@ -105,7 +105,7 @@ int thread_join(thread_t thread, void ** retval){
 			}
 		}
       
-		retthread->state=SUSPENDED;
+		retthread->state=EXITED;
 		if (retval){
 			//printf("%d",(int)retthread->ret);
 			*retval=retthread->ret;
@@ -156,51 +156,72 @@ int thread_kill(thread_t thread, int sig){
 
 }
 
-#include<stdio.h>
-#include<stdlib.h>
-#include"string.h"
-void *func(){
-    printf("%s","hi");
-   // char *ret;
-    //if ((ret = (char*) malloc(20)) == NULL) {
-     //   perror("malloc() error");
-    //    exit(2);
-    //}
-    //strcpy(ret, "This is a test");
-    //printf("%s",ret);
-    //thread_exit(ret);
-}
-
-
-void *newfunc(){
-    // sleep(10);
-    printf("%d ",getpid());
-    printf("%s\n\n\n\n", "hi3");
-    
-    // sleep(10);
-    return (void *)50;
-}
-void *thread(void *arg) {
-  char *ret;
-
-  if ((ret = (char*) malloc(20)) == NULL) {
-    perror("malloc() error");
-    exit(2);
-  }
-  strcpy(ret, "This is a test");
-  thread_exit(ret);
-}
-
-int main()
-{
-    void *status;
-    thread_t thread1;
-    thread_create(&thread1,newfunc, NULL);
-    thread_join(thread1,&status);   
-    printf("%d",(int)status);
-    // thread_kill(thread1,SIGINT);
-    return 0;
-}
-
+    #include <stdio.h>
+    #include <stdlib.h>
+    #include <string.h>
+    #include <unistd.h>
+    static threadlock *spinlock;
+    static int test_value = 0;
+    //int UDP_first_thread();
+    void * UDP_first_thread() 
+    {
+    	int i ,ret;
+    	
+    	printf("UDP_first_thread begin\n");
+    	for(i =0 ;i<10 ;i++ ) {
+    	thread_lock(*spinlock);
+    		test_value++;
+    		printf("test_value %d\n", test_value);
+    		sleep(5);
+    		thread_unlock(*spinlock);
+    	}
+    	printf("UDP_first_thread end\n");
+    	return (void *) ret;
+    }
+     
+    void * UDP_second_thread() 
+    {
+    	int i ,ret;
+    	
+    	printf("UDP_second_thread begin\n");
+    	for(i =0 ;i<10 ;i++ ) {
+    	    thread_lock(*spinlock);
+    		test_value--;
+    		printf("test_value %d\n", test_value);
+    		sleep(3);
+    		thread_unlock(*spinlock);
+    	}
+    	printf("UDP_second_thread end\n");
+    	return (void *)ret;
+    }
+     
+    int main(int argc, char* arg[]) 
+    {
+     
+    	int err;
+    	thread_t tid1, tid2;
+    	spinlock=(threadlock *)calloc(1,sizeof(threadlock));
+    	initlock(*spinlock);
+    	//----------------Create UDP server thread ----------------
+    	err =thread_create(&tid1, UDP_first_thread, NULL);
+    	if (err != 0) {
+    		perror(" fail to create thread ");
+    		return -1;
+    	}
+    	sleep(1);
+    	
+    		err =thread_create(&tid1, UDP_second_thread, NULL);
+    	if (err != 0) {
+    		perror(" fail to create thread ");
+    		return -1;
+    	}
+       
+       thread_join(tid1, NULL);
+       thread_join(tid2, NULL);
+    	
+    	printf("main end\n");
+     
+    	return 0;
+    }
 
 #endif

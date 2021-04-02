@@ -5,7 +5,7 @@
 #include <unistd.h>
 
 typedef enum states{
-    RUNNING,RUNNABLE,SLEEPING,WAITING,EXITED,SUSPENDED
+    RUNNING,RUNNABLE,EXITED
 }states;
 
 typedef pid_t thread_t;
