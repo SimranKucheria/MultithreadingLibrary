@@ -40,8 +40,7 @@ typedef struct threadlock{
 }threadlock;
 
 
-int thread_create(thread_t *,void *(*) (void *), void *); // provide option to use a desired mapping.
-//int thread_create(thread_t *thread,const pthread_attr_t *attr,void *(*start_routine) (void *), void *arg);//after defining attr structure use this definition
+int thread_create(thread_t *,void *(*) (void *), void *); 
 int thread_join(thread_t , void **);
 void thread_exit(void *retval);
 int initlock(threadlock );

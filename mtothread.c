@@ -71,7 +71,7 @@ void scheduler()
 /*function gets called initially*/
 void initialise()
 {
-    //set signal for SIGPROF
+    //set signal for SIGALARM
     struct sigaction handler;
     handler.sa_handler = &scheduler;
     sigemptyset(&handler.sa_mask);
