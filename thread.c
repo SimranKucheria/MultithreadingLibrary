@@ -26,7 +26,9 @@ queue *q;
 static int flag = 0;
 
 int initlock(threadlock lock){
-	atomic_load(&(lock.value))==0;
+	threadlock *t = (threadlock *)calloc(1, sizeof(threadlock));
+	lock=*t
+	atomic_store(&(lock.value),0);
 	return 0;
 }
 void setretval(void *t){
