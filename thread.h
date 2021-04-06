@@ -38,7 +38,9 @@ typedef struct thread_s{
 typedef struct threadlock{
     int value;
 }threadlock;
-
+typedef struct threadmutexlock{
+    int value;
+}threadmutexlock;
 
 int thread_create(thread_t *,void *(*) (void *), void *); 
 int thread_join(thread_t , void **);
@@ -47,4 +49,6 @@ int initlock(threadlock );
 int thread_lock(threadlock );
 int thread_unlock(threadlock);  
 int thread_kill(thread_t , int );
-
+int initmutexlock(threadmutexlock );
+int thread_mutex_lock(threadmutexlock );
+int thread_mutex_unlock(threadmutexlock);  

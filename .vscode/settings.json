@@ -3,6 +3,7 @@
         "unordered_map": "c",
         "stdio.h": "c",
         "stdlib.h": "c",
-        "types.h": "c"
+        "types.h": "c",
+        "futex.h": "c"
     }
 }

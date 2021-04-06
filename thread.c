@@ -19,23 +19,49 @@
 #include <sys/resource.h>
 #include <sys/time.h>
 #include <stdatomic.h>
-
+#include <linux/futex.h>
 #define STACKSIZE ((size_t)8192 * 1024)
 char *stackTop;
 queue *q;
 static int flag = 0;
-
-int initlock(threadlock lock){
-	threadlock *t = (threadlock *)calloc(1, sizeof(threadlock));
-	lock=*t
+int initmutexlock(threadmutexlock lock){
+    threadmutexlock *t = (threadmutexlock *)calloc(1, sizeof(threadmutexlock));
+	lock=*t;
 	atomic_store(&(lock.value),0);
 	return 0;
 }
+int thread_mutex_lock(threadmutexlock lock){
+    
+	if (atomic_load(&(lock.value))==0){
+			atomic_store(&(lock.value),1);
+            return 0;
+	}else{
+         while(atomic_load(&lock.value)==1){
+             syscall(SYS_futex, &lock.value, FUTEX_WAIT, 0);
+
+         }  
+         atomic_store(&(lock.value),1); 
+         return 0;
+     }
+
+}
+int thread_mutex_unlock(threadmutexlock lock){
+    
+     syscall(SYS_futex, &lock.value, FUTEX_WAKE, 0);
+     return 0;
+}
+
 void setretval(void *t){
 	thread_s *thread;
 	thread = (thread_s *)t;
 	thread->ret = thread->start_routine(thread->arg);
 	return;
+}
+int initlock(threadlock lock){
+	threadlock *t = (threadlock *)calloc(1, sizeof(threadlock));
+	lock=*t;
+	atomic_store(&(lock.value),0);
+	return 0;
 }
 int thread_lock(threadlock lock){
 	while (1){

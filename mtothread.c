@@ -17,12 +17,37 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <signal.h>
+#include <stdatomic.h>
 #define STACKSIZE ((size_t)8192 * 1024)
 queue *readyqueue, *completed;
 thread_s *current_thread;
+thread_s *main_thread;
 static pid_t id = 0;
 int first_thread = 0;
 void initialise();
+int main();
+
+int initlock(threadlock lock){
+	threadlock *t = (threadlock *)calloc(1, sizeof(threadlock));
+	lock=*t;
+	atomic_store(&(lock.value),0);
+	return 0;
+}
+int thread_lock(threadlock lock){
+	while (1){
+		if (atomic_load(&(lock.value))==0){
+			atomic_store(&(lock.value),1);
+			break;
+		}
+	}
+	return 0;
+}
+int thread_unlock(threadlock lock){
+	if (atomic_load(&(lock.value))==1){
+		atomic_store(&(lock.value),0);
+	}
+	return 0;
+}
 int gettid()
 {
     return id++;
@@ -36,13 +61,11 @@ void scheduler()
 {
     /*should handle context switching(saving the context of current and loading 
     the context of the other thread) and getting another thread from ready queue*/
+    printf("whut");
     alarm(0);
     thread_s *t;
-    //printf("%s", "inside scheduler");
-
     if (current_thread)
     {
-        //printf("%d", current_thread->state);
         if (current_thread->state != EXITED)
         {
             current_thread->state = RUNNABLE;
@@ -56,12 +79,17 @@ void scheduler()
     t = dequeue(readyqueue);
     if (t != NULL)
     {
-        printf("ThreadID %d", t->t_id);
-        current_thread = t;
-        t->state = RUNNING;
-        setcontext(&t->context);
-
-        alarm(2); //need to set timer
+        if(t->t_id==0){
+            enqueue(readyqueue,main_thread);
+            setcontext(&main_thread->context);
+            alarm(2);
+        }
+        else{
+            current_thread = t;
+            t->state = RUNNING;
+            setcontext(&t->context);
+            alarm(2); //need to set timer
+        }
     }
     else
     {
@@ -78,17 +106,25 @@ void initialise()
     handler.sa_flags = SA_RESTART | SA_NODEFER;
     sigaction(SIGALRM, &handler, NULL);
     alarm(2);
+    return;
 }
 int thread_create(thread_t *thread, void *(*start_routine)(void *), void *arg)
 {
+    printf("in create");
     if (first_thread == 0)
     {
+        alarm(0);
+        thread_s *main_thread = (thread_s *)calloc(1, sizeof(thread_s));
+        getcontext(&main_thread->context);
+        main_thread->state=RUNNABLE;
+        main_thread->t_id=gettid();
         first_thread = 1;
         thread_s *current_thread = (thread_s *)calloc(1, sizeof(thread_s));
+        completed = (queue *)calloc(1, sizeof(queue));
         readyqueue = (queue *)calloc(1, sizeof(queue));
         initq(readyqueue);
-        completed = (queue *)calloc(1, sizeof(queue));
         initq(completed);
+        enqueue(readyqueue,main_thread);
         initialise(); //setting the signal handler for the first time
         //timer bhi set karna hai
     }
@@ -105,6 +141,7 @@ int thread_create(thread_t *thread, void *(*start_routine)(void *), void *arg)
     t->context.uc_stack.ss_flags = 0;
     makecontext(&t->context, (void (*)(void))setretval, 1, (void *)t);
     enqueue(readyqueue, t);
+    
     *thread = t->t_id;
     alarm(2);
     return 0;
@@ -118,7 +155,7 @@ int thread_join(thread_t thread, void **retval)
     if (current_thread && current_thread->t_id == thread)
     {
         alarm(2);
-        fprintf(stderr, "hello");
+        fprintf(stderr, "hello in join");
         return EDEADLK;
     }
 
@@ -140,7 +177,6 @@ int thread_join(thread_t thread, void **retval)
 
         if (retval)
         {
-            //printf("%d",(int)retthread->ret);
             *retval = retthread->ret;
             return 0;
         }
@@ -166,3 +202,35 @@ void thread_exit(void *retval)
     return;
 }
 #endif
+#include<stdio.h>
+#include<stdlib.h>
+#include"string.h"
+void *func(){
+    printf("%s","hi func");
+    sleep(10);
+}
+
+
+void *newfunc(){
+   
+    printf("%d ",getpid());
+    printf("%s\n\n\n\n", "hi3");
+    return (void *)50;
+}
+int main()
+{
+    void *status;
+    thread_t thread1,thread2;
+    thread_create(&thread1,newfunc, NULL);
+  
+    thread_create(&thread2,func, NULL);
+    //thread_join(thread1,NULL);   
+    //thread_join(thread2,NULL);   
+    printf("%s","hhello in main");
+    sleep(15);
+    printf("%s","againnnn");
+   
+    printf(" hi there %d",(int)status);
+    // thread_kill(thread1,SIGINT);
+    return 0;
+}
