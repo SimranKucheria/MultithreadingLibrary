@@ -33,6 +33,9 @@ typedef struct thread_s{
     
     /*Value to wait for thread*/
     pid_t waittid;
+    
+    /*To check for getcontext*/
+    int exec;
 }thread_s;
 
 typedef struct threadlock{
