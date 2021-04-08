@@ -36,6 +36,9 @@ typedef struct thread_s{
     
     /*To check for getcontext*/
     int exec;
+    
+    /*To raise sig*/
+    int sig;
 }thread_s;
 
 typedef struct threadlock{

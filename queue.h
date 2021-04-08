@@ -15,3 +15,4 @@ int isQfull(queue * q);
 int isQempty(queue * q);
 void initq(queue * q);
 thread_s * getthread(queue * q, thread_t thread);
+int makeheadthread(queue *q,thread_t athread);

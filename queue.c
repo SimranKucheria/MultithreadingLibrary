@@ -86,3 +86,48 @@ thread_s *getthread(queue *q, thread_t thread)
 	}
 	return NULL;
 }
+
+int makeheadthread(queue *q,thread_t athread)
+{
+	nodeq *temp;
+	nodeq *t1;
+	nodeq *prev;
+	temp = q->head;
+	if (temp == NULL)
+	{
+		return 0;
+	}
+	if (!isQempty(q))
+	{
+		while (temp != q->tail)
+		{
+			if (athread == temp->thread->t_id)
+			{
+				t1=temp;
+				break;
+			}
+			prev=temp;
+			temp = temp->next;
+		}
+		if (temp==q->tail && athread == temp->thread->t_id){
+				t1=temp;
+		}
+	}
+	if (t1==NULL){
+		return 0;
+	}
+	if (t1->next==NULL){
+		prev->next=NULL;
+		q->tail=prev;
+		t1->next=q->head;
+		q->head=t1;
+		return 1;
+	}
+	if(t1->next){
+		prev->next=t1->next;
+		t1->next=q->head;
+		q->head=t1;
+		return 1;
+	}
+	return 0;
+}
