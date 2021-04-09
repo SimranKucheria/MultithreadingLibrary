@@ -57,25 +57,17 @@ void setretval(void *t){
 	thread->ret = thread->start_routine(thread->arg);
 	return;
 }
-int initlock(threadlock lock){
-	threadlock *t = (threadlock *)calloc(1, sizeof(threadlock));
-	lock=*t;
-	atomic_store(&(lock.value),0);
+int initlock(threadlock * lock){
+	lock= (threadlock *)calloc(1, sizeof(threadlock));
+	lock->value=0;
 	return 0;
 }
-int thread_lock(threadlock lock){
-	while (1){
-		if (atomic_load(&(lock.value))==0){
-			atomic_store(&(lock.value),1);
-			break;
-		}
-	}
+int thread_lock(threadlock * lock){
+	while (atomic_flag_test_and_set_explicit(&lock->value,1));
 	return 0;
 }
-int thread_unlock(threadlock lock){
-	if (atomic_load(&(lock.value))==1){
-		atomic_store(&(lock.value),0);
-	}
+int thread_unlock(threadlock * lock){
+	atomic_store(&lock->value,0);
 	return 0;
 }
 int thread_create(thread_t *thread, void *(*start_routine)(void *), void *arg){
@@ -154,54 +146,7 @@ int thread_kill(thread_t thread, int sig){
 	return 0;
 }
 
-#include <stdio.h>
-#include <stdlib.h>
-#include "string.h"
-void *func()
-{
-	printf("%s", "hi");
-	// char *ret;
-	//if ((ret = (char*) malloc(20)) == NULL) {
-	//   perror("malloc() error");
-	//    exit(2);
-	//}
-	//strcpy(ret, "This is a test");
-	//printf("%s",ret);
-	//thread_exit(ret);
-}
 
-void *newfunc()
-{
-	// sleep(10);
-	printf("%d ", getpid());
-	printf("%s\n\n\n\n", "hi3");
 
-	// sleep(10);
-	return (void *)50;
-}
-void *thread(void *arg)
-{
-	char *ret;
 
-	if ((ret = (char *)malloc(20)) == NULL)
-	{
-		perror("malloc() error");
-		exit(2);
-	}
-	strcpy(ret, "This is a test");
-	thread_exit(ret);
-}
-
-int main()
-{
-	void *status;
-	thread_t thread1, thread2;
-	thread_create(&thread1, newfunc, NULL);
-	thread_create(&thread2, func, NULL);
-	thread_join(thread1, &status);
-	thread_join(thread2, NULL);
-	printf("%d", (int)status);
-	// thread_kill(thread1,SIGINT);
-	return 0;
-}
 #endif

@@ -51,9 +51,9 @@ typedef struct threadmutexlock{
 int thread_create(thread_t *,void *(*) (void *), void *); 
 int thread_join(thread_t , void **);
 void thread_exit(void *retval);
-int initlock(threadlock );
-int thread_lock(threadlock );
-int thread_unlock(threadlock);  
+int initlock(threadlock * );
+int thread_lock(threadlock* );
+int thread_unlock(threadlock*);  
 int thread_kill(thread_t , int );
 int initmutexlock(threadmutexlock );
 int thread_mutex_lock(threadmutexlock );
