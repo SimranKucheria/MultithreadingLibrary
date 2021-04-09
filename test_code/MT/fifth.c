@@ -5,8 +5,7 @@
 #include <unistd.h>
 #include <pthread.h>
 static volatile int glob = 0;
-static pthread_spinlock_t splock;
-static pthread_mutex_t mtx;
+static threadmutexlock mtx;
 static int useMutex = 0;
 static int numOuterLoops;
 static int numInnerLoops;
@@ -18,30 +17,20 @@ threadFunc(void *arg)
 
     for (int j = 0; j < numOuterLoops; j++) {
         if (useMutex) {
-            s = pthread_mutex_lock(&mtx);
+            s = thread_mutex_lock(&mtx);
             if (s != 0)
                 //errExitEN(s, "pthread_mutex_lock");
                 printf("hiS");
-        } else {
-            s = pthread_spin_lock(&splock);
-            if (s != 0)
-                //errExitEN(s, "pthread_spin_lock");
-                 printf("hiS");
-        }
+        } 
 
         for (int k = 0; k < numInnerLoops; k++)
             glob++;
 
         if (useMutex) {
-            s = pthread_mutex_unlock(&mtx);
+            s = thread_mutex_unlock(&mtx);
             if (s != 0)
                 //errExitEN(s, "pthread_mutex_unlock");
-                 printf("hi");
-        } else {
-            s = pthread_spin_unlock(&splock);
-            if (s != 0)
-                //errExitEN(s, "pthread_spin_unlock");
-                 printf("hi");
+                 printf("hifi");
         }
     }
 
@@ -66,12 +55,9 @@ main(int argc, char *argv[])
 {
     int opt, s;
     int numThreads;
-    pthread_t *thread;
+    thread_t *thread;
     int verbose;
-
-    /* Prevent runaway/forgotten process from burning up CPU time forever */
-
-    alarm(120);         /* Unhandled SIGALRM will kill process */
+    alarm(120);        
 
     useMutex = 1;
     verbose = 1;
@@ -102,31 +88,26 @@ main(int argc, char *argv[])
                 numThreads, numOuterLoops, numInnerLoops);
     }
 
-    thread = calloc(numThreads, sizeof(pthread_t));
+    thread = calloc(numThreads, sizeof(thread_t));
     if (thread == NULL)
         printf("calloc");
 
     if (useMutex) {
-        s = pthread_mutex_init(&mtx, NULL);
+        s = initmutexlock(&mtx);
         if (s != 0)
            // errExitEN(s, "pthread_mutex_init");
             printf("hi");
-    } else {
-        s = pthread_spin_init(&splock, 0);
-        if (s != 0)
-           // errExitEN(s, "pthread_spin_init");
-            printf("hi");
-    }
+    } 
 
     for (int j = 0; j < numThreads; j++) {
-        s = pthread_create(&thread[j], NULL, threadFunc, NULL);
+        s = thread_create(&thread[j], threadFunc, NULL);
         if (s != 0)
            // errExitEN(s, "pthread_create");
             printf("hi");
     }
 
     for (int j = 0; j < numThreads; j++) {
-        s = pthread_join(thread[j], NULL);
+        s = thread_join(thread[j], NULL);
         if (s != 0)
             printf("hi");
             //errExitEN(s, "pthread_join");
