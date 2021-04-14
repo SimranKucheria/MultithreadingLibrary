@@ -18,6 +18,7 @@
 #include <sys/resource.h>
 #include <signal.h>
 #include <stdatomic.h>
+#include <linux/futex.h>
 #define STACKSIZE ((size_t)8192 * 1024)
 queue *readyqueue, *completed;
 thread_s *current_thread;
@@ -26,6 +27,24 @@ static pid_t id = 0;
 int first_thread = 0,main_thread_set=0;
 void initialise();
 int main();
+int initmutexlock(threadmutexlock * lock){
+    lock  = (threadmutexlock *)calloc(1, sizeof(threadmutexlock));
+	lock->value=0;
+	return 0;
+}
+int thread_mutex_lock(threadmutexlock * lock){
+    while ((atomic_flag_test_and_set_explicit(&lock->value,1)) != 0) {
+            syscall(SYS_futex, lock->value, FUTEX_WAIT, 1, NULL, NULL, 0);
+    }
+    return 0;
+}
+int thread_mutex_unlock(threadmutexlock * lock){
+    if(atomic_fetch_sub(&lock->value, 1) != 1)  {
+        lock->value = 0;
+        syscall(SYS_futex, lock->value, FUTEX_WAKE, 1, NULL, NULL, 0);
+    }
+   return 0;
+}
 int initlock(threadlock * lock){
 	lock= (threadlock *)calloc(1, sizeof(threadlock));
 	if (!lock){
@@ -56,27 +75,28 @@ void setretval(void){
 void scheduler(){
     /*should handle context switching(saving the context of current and loading 
     the context of the other thread) and getting another thread from ready queue*/
+    // ualarm(0,0);
     sighold(SIGALRM);
     thread_s *t;
     if (current_thread->lockvar==1){
-    	ualarm(2,0);
+    	ualarm(8,0);
     	return;
     }
     if (current_thread->state != EXITED){
-	if((getcontext(current_thread->context))==0){
-    		if(current_thread->exec){
-	        	current_thread->exec=0;
-	        	if(current_thread->sig!=-1){
-	        		raise(current_thread->sig);
-	        	}
-	        	ualarm(2,0);
-    			return;
-    		}	
-    		else{	    
-    			current_thread->state = RUNNABLE;
-			enqueue(readyqueue, current_thread);
-		}
-	}
+        if((getcontext(current_thread->context))==0){
+                if(current_thread->exec){
+                    current_thread->exec=0;
+                    if(current_thread->sig!=-1){
+                        raise(current_thread->sig);
+                    }
+                    ualarm(8,0);
+                    return;
+                }	
+                else{	    
+                    current_thread->state = RUNNABLE;
+                enqueue(readyqueue, current_thread);
+            }
+        }
    }
    else{
    	enqueue(completed, current_thread);
@@ -86,7 +106,7 @@ void scheduler(){
 	current_thread = t;
 	current_thread->state = RUNNING;
 	current_thread->exec=1;
-	ualarm(2,0);
+	ualarm(8,0);
 	setcontext(current_thread->context);
    }
    else{
@@ -102,7 +122,7 @@ void initialise(){
     sigemptyset(&handler.sa_mask);
     handler.sa_flags = SA_RESTART | SA_NODEFER;
     sigaction(SIGALRM, &handler, NULL);
-    ualarm(2,0);
+    ualarm(8,0);
     return;
 }
 
@@ -155,7 +175,7 @@ int thread_create(thread_t *thread, void *(*start_routine)(void *), void *arg){
         thread_s *main_thread = (thread_s *)calloc(1, sizeof(thread_s));
         if(!main_thread)
 	    	return EINVAL;
-	main_thread->context=(ucontext_t *)calloc(1,sizeof(ucontext_t));
+	    main_thread->context=(ucontext_t *)calloc(1,sizeof(ucontext_t));
     	if(!main_thread->context){
     		return EINVAL;
     	}    	
@@ -170,20 +190,22 @@ int thread_create(thread_t *thread, void *(*start_routine)(void *), void *arg){
         main_thread->sig=-1;
         main_thread->lockvar=0;
         current_thread=main_thread;
-        /*if((getcontext(&main_thread->context))==0){
+        if((getcontext(main_thread->context))==0){
         	if(main_thread->exec){
 	                main_thread->exec=0;
 	                if(main_thread->sig!=-1){
 	        		raise(main_thread->sig);
 	        	}
-        	        ualarm(2,0);
+        	        ualarm(8,0);
         		return 0;
         	}
-        	else{*/
-        raise(SIGALRM);
+        	else{
+                raise(SIGALRM);
+            }
+        }
         return 0;
     }
-    ualarm(2,0);
+    ualarm(8,0);
     return 0;
 }
 int thread_join(thread_t thread, void **retval){
@@ -191,7 +213,7 @@ int thread_join(thread_t thread, void **retval){
     thread_s *retthread;
     if (current_thread && current_thread->t_id == thread)
     {
-        ualarm(2,0);
+        ualarm(8,0);
         return EDEADLK;
     }
     retthread = getthread(readyqueue, thread);
@@ -199,7 +221,7 @@ int thread_join(thread_t thread, void **retval){
     {
         if (retthread->state == EXITED)
         {
-            ualarm(2,0);
+            ualarm(8,0);
             return EINVAL;
         }
         while (1)
@@ -214,7 +236,7 @@ int thread_join(thread_t thread, void **retval){
         {
             *retval = retthread->ret;
         }
-        ualarm(2,0);
+        ualarm(8,0);
         return 0;
         //Do we need to remove from queue
     }
@@ -227,12 +249,12 @@ int thread_join(thread_t thread, void **retval){
             {
 	            *retval = retthread->ret;
             }
-            ualarm(2,0);
+            ualarm(8,0);
             return 0;
         }
         else
         {
-        	ualarm(2,0);
+        	ualarm(8,0);
         	return ESRCH;
         }
     }
@@ -254,7 +276,7 @@ int thread_kill(thread_t thread, int sig){
 	if(sig){
 		if (current_thread->t_id==thread){
 			if(raise(sig)==0){
-				ualarm(2,0);
+				ualarm(8,0);
 				return 0;
 			}
 		}
@@ -264,7 +286,7 @@ int thread_kill(thread_t thread, int sig){
 				retthread=getthread(readyqueue,thread);
 				retthread->sig=sig;
 				raise(SIGALRM);
-				ualarm(2,0);
+				ualarm(8,0);
 				return 0;
 			}
 			else{
@@ -272,15 +294,16 @@ int thread_kill(thread_t thread, int sig){
 			}
 		}
 	}
-	ualarm(2,0);
+	ualarm(8,0);
 	return 0;
 }
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 static volatile int glob = 0;
-static threadlock splock;
+static threadmutexlock mtx;
 static int useMutex = 0;
 static int numOuterLoops;
 static int numInnerLoops;
@@ -288,25 +311,25 @@ static int numInnerLoops;
 static void *
 threadFunc(void *arg)
 {
-	printf("3");
     int s;
 
     for (int j = 0; j < numOuterLoops; j++) {
-       
-        s = thread_lock(&splock);
-        if (s != 0)
-                //errExitEN(s, "pthread_spin_lock");
-         printf("hiS");
-    
+        if (useMutex) {
+            s = thread_mutex_lock(&mtx);
+            if (s != 0)
+                //errExitEN(s, "pthread_mutex_lock");
+                printf("hiS");
+        } 
 
         for (int k = 0; k < numInnerLoops; k++)
             glob++;
 
-        s = thread_unlock(&splock);
-        if (s != 0)
-                //errExitEN(s, "pthread_spin_unlock");
-        printf("hi");
-        
+        if (useMutex) {
+            s = thread_mutex_unlock(&mtx);
+            if (s != 0)
+                //errExitEN(s, "pthread_mutex_unlock");
+                 printf("hifi");
+        }
     }
 
     return NULL;
@@ -332,12 +355,9 @@ main(int argc, char *argv[])
     int numThreads;
     thread_t *thread;
     int verbose;
+    alarm(120);        
 
-    /* Prevent runaway/forgotten process from burning up CPU time forever */
-
-    alarm(120);         /* Unhandled SIGALRM will kill process */
-
-    useMutex = 0;
+    useMutex = 1;
     verbose = 1;
     while ((opt = getopt(argc, argv, "qs")) != -1) {
         switch (opt) {
@@ -358,7 +378,7 @@ main(int argc, char *argv[])
 
     numThreads = atoi(argv[optind]);
     numInnerLoops = (optind + 1 < argc) ? atoi(argv[optind + 1]) : 1;
-    numOuterLoops = (optind + 2 < argc) ? atoi(argv[optind + 2]) : 10000;
+    numOuterLoops = (optind + 2 < argc) ? atoi(argv[optind + 2]) : 10000000;
 
     if (verbose) {
         printf("Using %s\n", useMutex ? "mutexes" : "spin locks");
@@ -370,12 +390,12 @@ main(int argc, char *argv[])
     if (thread == NULL)
         printf("calloc");
 
-
-    s = initlock(&splock);
-    if (s != 0)
-           // errExitEN(s, "pthread_spin_init");
-        printf("hi");
-    
+    if (useMutex) {
+        s = initmutexlock(&mtx);
+        if (s != 0)
+           // errExitEN(s, "pthread_mutex_init");
+            printf("hi");
+    } 
 
     for (int j = 0; j < numThreads; j++) {
         s = thread_create(&thread[j], threadFunc, NULL);
@@ -396,4 +416,5 @@ main(int argc, char *argv[])
     }
     exit(EXIT_SUCCESS);
 }
+
 #endif
