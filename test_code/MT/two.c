@@ -1,7 +1,6 @@
 #include<stdio.h>
 #include<stdlib.h>
-#include "string.h"
-#include <pthread.h>
+#include"string.h"
 void *func(){
     printf("%s","hi");
    // char *ret;
@@ -31,15 +30,15 @@ void *thread(void *arg) {
     exit(2);
   }
   strcpy(ret, "This is a test");
-  pthread_exit(ret);
+  thread_exit(ret);
 }
 
 int main()
 {
     void *status;
-    pthread_t thread1;
-    pthread_create(&thread1,NULL,newfunc, NULL);
-    pthread_join(thread1,&status);   
+    thread_t thread1;
+    thread_create(&thread1,newfunc, NULL);
+    thread_join(thread1,&status);   
     printf("%d",(int)status);
     // thread_kill(thread1,SIGINT);
     return 0;

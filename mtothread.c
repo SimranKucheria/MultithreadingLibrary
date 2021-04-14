@@ -28,6 +28,9 @@ void initialise();
 int main();
 int initlock(threadlock * lock){
 	lock= (threadlock *)calloc(1, sizeof(threadlock));
+	if (!lock){
+		return EINVAL;
+	}
 	lock->value=0;
 	return 0;
 }
@@ -105,6 +108,9 @@ int thread_create(thread_t *thread, void *(*start_routine)(void *), void *arg){
         thread_s *current_thread = (thread_s *)calloc(1, sizeof(thread_s));
         completed = (queue *)calloc(1, sizeof(queue));
         readyqueue = (queue *)calloc(1, sizeof(queue));
+        if(!current_thread || !completed || !readyqueue){
+        	return EINVAL;
+        }
         initq(readyqueue);
         initq(completed);
         initialise(); //setting the signal handler for the first time
@@ -112,12 +118,17 @@ int thread_create(thread_t *thread, void *(*start_routine)(void *), void *arg){
     }
     ualarm(0,0);
     thread_s *t = (thread_s *)calloc(1, sizeof(thread_s));
+    if(!t){
+    	return EINVAL;
+    }
     if(getcontext(&t->context)==0){
 	    t->arg = arg;
 	    t->state = RUNNABLE;
 	    t->t_id = gettid();
 	    t->start_routine = start_routine;
-	    t->context.uc_stack.ss_sp = (char *)malloc(STACKSIZE);
+	    t->context.uc_stack.ss_sp = (char *)calloc(1,STACKSIZE);
+	    if(!t->context.uc_stack.ss_sp)
+	    	return EINVAL;
 	    t->context.uc_stack.ss_size = 8192 * 1024;
 	    t->context.uc_stack.ss_flags = 0;
 	    t->exec=1;
@@ -131,7 +142,11 @@ int thread_create(thread_t *thread, void *(*start_routine)(void *), void *arg){
     if(!main_thread_set){
         main_thread_set=1;
         thread_s *main_thread = (thread_s *)calloc(1, sizeof(thread_s));
-        main_thread->context.uc_stack.ss_sp = (char *)malloc(STACKSIZE);
+         if(!main_thread)
+	    	return EINVAL;
+        main_thread->context.uc_stack.ss_sp = (char *)calloc(1,STACKSIZE);
+        if(!main_thread->context.uc_stack.ss_sp)
+	    	return EINVAL;
         main_thread->context.uc_stack.ss_size = 8192 * 1024;
         main_thread->context.uc_stack.ss_flags = 0;
         main_thread->state=RUNNABLE;
@@ -248,123 +263,61 @@ int thread_kill(thread_t thread, int sig){
 	return 0;
 }
 #endif
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-static volatile int glob = 0;
-static threadlock splock;
-static int useMutex = 0;
-static int numOuterLoops;
-static int numInnerLoops;
-
-static void *
-threadFunc(void *arg)
-{
-    int s;
-
-    for (int j = 0; j < numOuterLoops; j++) {
-       
-        s = thread_lock(&splock);
-        if (s != 0)
-                //errExitEN(s, "pthread_spin_lock");
-         printf("hiS");
-    
-
-        for (int k = 0; k < numInnerLoops; k++)
-            glob++;
-
-        s = thread_unlock(&splock);
-        if (s != 0)
-                //errExitEN(s, "pthread_spin_unlock");
-        printf("hi");
-        
-    }
-
-    return NULL;
-}
-
-static void
-usageError(char *pname)
-{
-    fprintf(stderr,
-            "Usage: %s [-s] num-threads "
-            "[num-inner-loops [num-outer-loops]]\n", pname);
-    fprintf(stderr,
-            "    -q   Don't print verbose messages\n");
-    fprintf(stderr,
-            "    -s   Use spin locks (instead of the default mutexes)\n");
-    exit(EXIT_FAILURE);
-}
-
-int
-main(int argc, char *argv[])
-{
-    int opt, s;
-    int numThreads;
-    thread_t *thread;
-    int verbose;
-
-    /* Prevent runaway/forgotten process from burning up CPU time forever */
-
-    alarm(120);         /* Unhandled SIGALRM will kill process */
-
-    useMutex = 0;
-    verbose = 1;
-    while ((opt = getopt(argc, argv, "qs")) != -1) {
-        switch (opt) {
-        case 'q':
-            verbose = 0;
-            break;
-        case 's':
-            printf("here");
-            useMutex = 0;
-            break;
-        default:
-            usageError(argv[0]);
-        }
-    }
-
-    if (optind >= argc)
-        usageError(argv[0]);
-
-    numThreads = atoi(argv[optind]);
-    numInnerLoops = (optind + 1 < argc) ? atoi(argv[optind + 1]) : 1;
-    numOuterLoops = (optind + 2 < argc) ? atoi(argv[optind + 2]) : 10000000;
-
-    if (verbose) {
-        printf("Using %s\n", useMutex ? "mutexes" : "spin locks");
-        printf("\tthreads: %d; outer loops: %d; inner loops: %d\n",
-                numThreads, numOuterLoops, numInnerLoops);
-    }
-
-    thread = calloc(numThreads, sizeof(thread_t));
-    if (thread == NULL)
-        printf("calloc");
-
-
-    s = initlock(&splock);
-    if (s != 0)
-           // errExitEN(s, "pthread_spin_init");
-        printf("hi");
-    
-
-    for (int j = 0; j < numThreads; j++) {
-        s = thread_create(&thread[j], threadFunc, NULL);
-        if (s != 0)
-           // errExitEN(s, "pthread_create");
-            printf("hi");
-    }
-
-    for (int j = 0; j < numThreads; j++) {
-        s = thread_join(thread[j], NULL);
-        if (s != 0)
-            printf("hi");
-            //errExitEN(s, "pthread_join");
-    }
-
-    if (verbose){
-        printf("glob = %d\n", glob);
-    }
-    exit(EXIT_SUCCESS);
-}
+#define _OPEN_THREADS                                                           
+                                                                                
+#include <errno.h>                                                              
+#include <pthread.h>                                                            
+#include <signal.h>                                                             
+#include <stdio.h>                                                              
+#include <unistd.h>                                                             
+                                                                                
+void            *threadfunc(void *parm)                                         
+{                                                                               
+ int        threadnum;                                                          
+ int        *tnum;                                                              
+ sigset_t   set;                                                                
+                                                                                
+ tnum = parm;                                                                   
+ threadnum = *tnum;                                                             
+                                                                                
+ printf("Thread %d executing\n", threadnum);                                    
+ sigemptyset(&set);                                                             
+ if(sigaddset(&set, SIGUSR1) == -1) {                                           
+    perror("Sigaddset error");                                                  
+    thread_exit((void *)1);                                                    
+ }                                                                              
+                                                                                
+ if(sigwait(&set,NULL) != SIGUSR1) {                                                 
+    perror("Sigwait error");                                                    
+    thread_exit((void *)2);                                                    
+ }                                                                              
+                                                                                
+ thread_exit((void *)0);                                                       
+}                                                                               
+                                                                                
+main() {                                                                        
+ int          status;                                                           
+ int          threadparm = 1;                                                   
+ thread_t    threadid;                                                         
+ int          thread_stat;                                                      
+                                                                                
+ status = thread_create( &threadid,                                              
+                          threadfunc,                                           
+                          (void *)&threadparm);                                 
+ if ( status <  0) {                                                            
+    perror("thread_create failed");                                            
+    exit(1);                                                                    
+ }                                                                              
+                                                                                
+ sleep(5);                                                                      
+                                                                                
+ status = thread_kill( threadid, SIGUSR1);                                     
+ if ( status <  0)                                                              
+    perror("thread_kill failed");                                              
+                                                                                
+ status = thread_join( threadid, (void *)&thread_stat);                        
+ if ( status <  0)                                                              
+    perror("thread_join failed");                                              
+                                                                                
+ exit(0);                                                                       
+}                    

@@ -25,7 +25,7 @@ char *stackTop;
 queue *q;
 static int flag = 0;
 int initmutexlock(threadmutexlock * lock){
-    lock  = (threadmutexlock *)calloc(1, sizeof(threadmutexlock));
+        lock  = (threadmutexlock *)calloc(1, sizeof(threadmutexlock));
 	lock->value=0;
 	return 0;
 }
@@ -128,7 +128,7 @@ void thread_exit(void *retval){
 	}
 	return;
 }
-int thread_kill(thread_t thread, int sig){
+int thread_kill(thread_t thread, int sig){ 
 	pid_t p_id = getpid();
 	if (sig){
 		int ret = syscall(SYS_tgkill, p_id, thread, sig);
@@ -138,13 +138,13 @@ int thread_kill(thread_t thread, int sig){
 	}
 	return 0;
 }
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <pthread.h>
 static volatile int glob = 0;
-static threadlock splock;
+static threadmutexlock mtx;
 static int useMutex = 0;
 static int numOuterLoops;
 static int numInnerLoops;
@@ -155,21 +155,22 @@ threadFunc(void *arg)
     int s;
 
     for (int j = 0; j < numOuterLoops; j++) {
-       
-        s = thread_lock(&splock);
-        if (s != 0)
-                //errExitEN(s, "pthread_spin_lock");
-         printf("hiS");
-    
+        if (useMutex) {
+            s = thread_mutex_lock(&mtx);
+            if (s != 0)
+                //errExitEN(s, "pthread_mutex_lock");
+                printf("hiS");
+        } 
 
         for (int k = 0; k < numInnerLoops; k++)
             glob++;
 
-        s = thread_unlock(&splock);
-        if (s != 0)
-                //errExitEN(s, "pthread_spin_unlock");
-        printf("hi");
-        
+        if (useMutex) {
+            s = thread_mutex_unlock(&mtx);
+            if (s != 0)
+                //errExitEN(s, "pthread_mutex_unlock");
+                 printf("hifi");
+        }
     }
 
     return NULL;
@@ -195,12 +196,9 @@ main(int argc, char *argv[])
     int numThreads;
     thread_t *thread;
     int verbose;
+    alarm(120);        
 
-    /* Prevent runaway/forgotten process from burning up CPU time forever */
-
-    alarm(120);         /* Unhandled SIGALRM will kill process */
-
-    useMutex = 0;
+    useMutex = 1;
     verbose = 1;
     while ((opt = getopt(argc, argv, "qs")) != -1) {
         switch (opt) {
@@ -233,12 +231,12 @@ main(int argc, char *argv[])
     if (thread == NULL)
         printf("calloc");
 
-
-    s = initlock(&splock);
-    if (s != 0)
-           // errExitEN(s, "pthread_spin_init");
-        printf("hi");
-    
+    if (useMutex) {
+        s = initmutexlock(&mtx);
+        if (s != 0)
+           // errExitEN(s, "pthread_mutex_init");
+            printf("hi");
+    } 
 
     for (int j = 0; j < numThreads; j++) {
         s = thread_create(&thread[j], threadFunc, NULL);
@@ -259,5 +257,4 @@ main(int argc, char *argv[])
     }
     exit(EXIT_SUCCESS);
 }
-
 #endif

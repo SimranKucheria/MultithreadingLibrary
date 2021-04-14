@@ -39,6 +39,9 @@ typedef struct thread_s{
     
     /*To raise sig*/
     int sig;
+    
+    /*Lock varable*/
+    int lockvar;
 }thread_s;
 
 typedef struct threadlock{

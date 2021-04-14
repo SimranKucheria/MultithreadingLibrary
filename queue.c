@@ -113,6 +113,9 @@ int makeheadthread(queue *q,thread_t athread)
 				t1=temp;
 		}
 	}
+	if (t1==q->head){
+		return 1;
+	}
 	if (t1==NULL){
 		return 0;
 	}
