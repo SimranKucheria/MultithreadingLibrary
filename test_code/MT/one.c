@@ -1,10 +1,11 @@
 #define _OPEN_THREADS                                                           
                                                                                 
 #include <errno.h>                                                              
-#include <pthread.h>                                                            
+#include "thread.h"                                                           
 #include <signal.h>                                                             
 #include <stdio.h>                                                              
-#include <unistd.h>                                                             
+#include <unistd.h>  
+#include <stdlib.h>                                                             
                                                                                 
 void            *threadfunc(void *parm)                                         
 {                                                                               

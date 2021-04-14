@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <pthread.h>
+#include "thread.h"
 static volatile int glob = 0;
 static threadmutexlock mtx;
 static int useMutex = 0;

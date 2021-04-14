@@ -17,7 +17,7 @@ typedef struct thread_s{
     char * stack;
 
     /*context of the thread */
-    ucontext_t context;
+    ucontext_t * context;
 
     /*function to be executed */
     void *(*start_routine) (void *);
