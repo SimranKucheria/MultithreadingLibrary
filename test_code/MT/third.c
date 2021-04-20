@@ -2,7 +2,7 @@
     #include <stdlib.h>
     #include <string.h>
     #include <unistd.h>
-    #include "thread.h"
+    #include "../../thread.h"
     static threadlock spinlock;
     static int test_value = 0;
     //int UDP_first_thread();

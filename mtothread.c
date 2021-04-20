@@ -24,6 +24,7 @@ queue *readyqueue, *completed;
 thread_s *current_thread;
 thread_s *main_thread;
 static pid_t id = 0;
+struct itimerval timer;
 int first_thread = 0,main_thread_set=0;
 void initialise();
 int main();
@@ -50,17 +51,15 @@ int initlock(threadlock * lock){
 	if (!lock){
 		return EINVAL;
 	}
-	lock->value=0;
+	atomic_store(&lock->value,0);
 	return 0;
 }
 int thread_lock(threadlock * lock){
 	while (atomic_flag_test_and_set_explicit(&lock->value,1));
-	atomic_store(&current_thread->lockvar,1);
 	return 0;
 }
 int thread_unlock(threadlock * lock){
 	atomic_store(&lock->value,0);
-	atomic_store(&current_thread->lockvar,0);
 	return 0;
 }
 int gettid(){
@@ -68,20 +67,15 @@ int gettid(){
 }
 void setretval(void){
 	current_thread->ret = current_thread->start_routine(current_thread->arg);
-	ualarm(0,0);
+	setitimer (ITIMER_VIRTUAL, 0, NULL);
 	current_thread->state=EXITED;
-	raise(SIGALRM);
+	raise(SIGVTALRM);
 }
 void scheduler(){
     /*should handle context switching(saving the context of current and loading 
     the context of the other thread) and getting another thread from ready queue*/
-    // ualarm(0,0);
-    sighold(SIGALRM);
+    setitimer (ITIMER_VIRTUAL, 0, NULL);
     thread_s *t;
-    if (current_thread->lockvar==1){
-    	ualarm(8,0);
-    	return;
-    }
     if (current_thread->state != EXITED){
         if((getcontext(current_thread->context))==0){
                 if(current_thread->exec){
@@ -89,7 +83,7 @@ void scheduler(){
                     if(current_thread->sig!=-1){
                         raise(current_thread->sig);
                     }
-                    ualarm(8,0);
+                    setitimer (ITIMER_VIRTUAL, &timer, NULL);
                     return;
                 }	
                 else{	    
@@ -106,11 +100,11 @@ void scheduler(){
 	current_thread = t;
 	current_thread->state = RUNNING;
 	current_thread->exec=1;
-	ualarm(8,0);
+	setitimer (ITIMER_VIRTUAL, &timer, NULL);
 	setcontext(current_thread->context);
    }
    else{
-    	ualarm(0,0);
+    	setitimer (ITIMER_VIRTUAL, 0, NULL);
     	return;
    }
 }
@@ -118,18 +112,25 @@ void scheduler(){
 void initialise(){
     //set signal for SIGALARM
     struct sigaction handler;
+    
+    // memset(&handler, 0, sizeof handler);
     handler.sa_handler = &scheduler;
     sigemptyset(&handler.sa_mask);
     handler.sa_flags = SA_RESTART | SA_NODEFER;
-    sigaction(SIGALRM, &handler, NULL);
-    ualarm(8,0);
-    return;
+    sigaction(SIGVTALRM, &handler, NULL);
+    // ualarm(2,0);
+    timer.it_value.tv_sec = 0;
+    timer.it_value.tv_usec = 20;
+    timer.it_interval.tv_sec = 0;
+    timer.it_interval.tv_usec = 20;
+    setitimer (ITIMER_VIRTUAL, &timer, NULL);
+
 }
 
 int thread_create(thread_t *thread, void *(*start_routine)(void *), void *arg){
     if (first_thread == 0)
     {
-        ualarm(0,0);
+        setitimer (ITIMER_VIRTUAL,0, NULL);
         first_thread = 1;
         thread_s *current_thread = (thread_s *)calloc(1, sizeof(thread_s));
         completed = (queue *)calloc(1, sizeof(queue));
@@ -142,7 +143,7 @@ int thread_create(thread_t *thread, void *(*start_routine)(void *), void *arg){
         initialise(); //setting the signal handler for the first time
         //timer bhi set karna hai
     }
-    ualarm(0,0);
+    setitimer (ITIMER_VIRTUAL,0, NULL);
     thread_s *t = (thread_s *)calloc(1, sizeof(thread_s));
     if(!t){
     	return EINVAL;
@@ -163,7 +164,6 @@ int thread_create(thread_t *thread, void *(*start_routine)(void *), void *arg){
 	    t->context->uc_stack.ss_flags = 0;
 	    t->exec=0;
 	    t->sig=-1;
-	    t->lockvar=0;
 	    makecontext(t->context, (void (*)(void))setretval, 1, (void *)t);
 	    enqueue(readyqueue, t);
 	    *thread = t->t_id;
@@ -188,32 +188,33 @@ int thread_create(thread_t *thread, void *(*start_routine)(void *), void *arg){
         main_thread->t_id=gettid();
         main_thread->exec=0;
         main_thread->sig=-1;
-        main_thread->lockvar=0;
         current_thread=main_thread;
-        if((getcontext(main_thread->context))==0){
-        	if(main_thread->exec){
-	                main_thread->exec=0;
-	                if(main_thread->sig!=-1){
-	        		raise(main_thread->sig);
-	        	}
-        	        ualarm(8,0);
-        		return 0;
-        	}
-        	else{
-                raise(SIGALRM);
-            }
-        }
+        // if((getcontext(main_thread->context))==0){
+        	// if(main_thread->exec){
+	        //         main_thread->exec=0;
+	        //         if(main_thread->sig!=-1){
+	        // 		raise(main_thread->sig);
+	        // 	}
+        	//         setitimer (ITIMER_VIRTUAL, &timer, NULL);
+        	// 	return 0;
+        	// }
+        	// else{
+               
+            // }
+        // }
+        raise(SIGVTALRM);
+        fprintf(stderr,"going to main");
         return 0;
     }
-    ualarm(8,0);
+    setitimer (ITIMER_VIRTUAL, &timer, NULL);
     return 0;
 }
 int thread_join(thread_t thread, void **retval){
-    ualarm(0,0);
+    setitimer (ITIMER_VIRTUAL, 0, NULL);
     thread_s *retthread;
     if (current_thread && current_thread->t_id == thread)
     {
-        ualarm(8,0);
+        setitimer (ITIMER_VIRTUAL, &timer, NULL);
         return EDEADLK;
     }
     retthread = getthread(readyqueue, thread);
@@ -221,7 +222,7 @@ int thread_join(thread_t thread, void **retval){
     {
         if (retthread->state == EXITED)
         {
-            ualarm(8,0);
+            setitimer (ITIMER_VIRTUAL, &timer, NULL);
             return EINVAL;
         }
         while (1)
@@ -230,13 +231,13 @@ int thread_join(thread_t thread, void **retval){
             {
                 break;
             }
-            raise(SIGALRM);
+            raise(SIGVTALRM);
         }
         if (retval)
         {
             *retval = retthread->ret;
         }
-        ualarm(8,0);
+        setitimer (ITIMER_VIRTUAL, &timer, NULL);
         return 0;
         //Do we need to remove from queue
     }
@@ -249,34 +250,34 @@ int thread_join(thread_t thread, void **retval){
             {
 	            *retval = retthread->ret;
             }
-            ualarm(8,0);
+            setitimer (ITIMER_VIRTUAL, &timer, NULL);
             return 0;
         }
         else
         {
-        	ualarm(8,0);
+        	setitimer (ITIMER_VIRTUAL, &timer, NULL);
         	return ESRCH;
         }
     }
     //return 0;
 }
 void thread_exit(void *retval){
-    ualarm(0,0);
+    setitimer (ITIMER_VIRTUAL,0, NULL);
     if (current_thread)
     {
         current_thread->state = EXITED;
         current_thread->ret = retval;
     }
-    raise(SIGALRM);
+    raise(SIGVTALRM);
     return;
 }
 
 int thread_kill(thread_t thread, int sig){
-	ualarm(0,0);
+	setitimer (ITIMER_VIRTUAL,0, NULL);
 	if(sig){
 		if (current_thread->t_id==thread){
 			if(raise(sig)==0){
-				ualarm(8,0);
+				setitimer (ITIMER_VIRTUAL, &timer, NULL);
 				return 0;
 			}
 		}
@@ -285,8 +286,8 @@ int thread_kill(thread_t thread, int sig){
 				thread_s *retthread;
 				retthread=getthread(readyqueue,thread);
 				retthread->sig=sig;
-				raise(SIGALRM);
-				ualarm(8,0);
+				raise(SIGVTALRM);
+				setitimer (ITIMER_VIRTUAL, &timer, NULL);
 				return 0;
 			}
 			else{
@@ -294,127 +295,76 @@ int thread_kill(thread_t thread, int sig){
 			}
 		}
 	}
-	ualarm(8,0);
+	setitimer (ITIMER_VIRTUAL, &timer, NULL);
 	return 0;
 }
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-static volatile int glob = 0;
-static threadmutexlock mtx;
-static int useMutex = 0;
-static int numOuterLoops;
-static int numInnerLoops;
-
-static void *
-threadFunc(void *arg)
-{
-    int s;
-
-    for (int j = 0; j < numOuterLoops; j++) {
-        if (useMutex) {
-            s = thread_mutex_lock(&mtx);
-            if (s != 0)
-                //errExitEN(s, "pthread_mutex_lock");
-                printf("hiS");
-        } 
-
-        for (int k = 0; k < numInnerLoops; k++)
-            glob++;
-
-        if (useMutex) {
-            s = thread_mutex_unlock(&mtx);
-            if (s != 0)
-                //errExitEN(s, "pthread_mutex_unlock");
-                 printf("hifi");
-        }
+    #include <stdio.h>
+    #include <stdlib.h>
+    #include <string.h>
+    #include <unistd.h>
+    static threadlock spinlock;
+    static int test_value = 0;
+    //int UDP_first_thread();
+    void * UDP_first_thread() 
+    {
+    	int i ,ret;
+    	
+    	printf("UDP_first_thread begin\n");
+    	for(i =0 ;i<10 ;i++ ) {
+    	thread_lock(&spinlock);
+    		test_value++;
+    		printf("test_value %d\n", test_value);
+    		sleep(5);
+    		thread_unlock(&spinlock);
+    	}
+    	printf("UDP_first_thread end\n");
+    	return (void *) ret;
     }
-
-    return NULL;
-}
-
-static void
-usageError(char *pname)
-{
-    fprintf(stderr,
-            "Usage: %s [-s] num-threads "
-            "[num-inner-loops [num-outer-loops]]\n", pname);
-    fprintf(stderr,
-            "    -q   Don't print verbose messages\n");
-    fprintf(stderr,
-            "    -s   Use spin locks (instead of the default mutexes)\n");
-    exit(EXIT_FAILURE);
-}
-
-int
-main(int argc, char *argv[])
-{
-    int opt, s;
-    int numThreads;
-    thread_t *thread;
-    int verbose;
-    alarm(120);        
-
-    useMutex = 1;
-    verbose = 1;
-    while ((opt = getopt(argc, argv, "qs")) != -1) {
-        switch (opt) {
-        case 'q':
-            verbose = 0;
-            break;
-        case 's':
-            printf("here");
-            useMutex = 0;
-            break;
-        default:
-            usageError(argv[0]);
-        }
+     
+    void * UDP_second_thread() 
+    {
+    	int i ,ret;
+    	
+    	printf("UDP_second_thread begin\n");
+    	for(i =0 ;i<10 ;i++ ) {
+    	    thread_lock(&spinlock);
+    		test_value--;
+    		printf("test_value %d\n", test_value);
+    		sleep(3);
+    		thread_unlock(&spinlock);
+    	}
+    	printf("UDP_second_thread end\n");
+    	return (void *)ret;
     }
-
-    if (optind >= argc)
-        usageError(argv[0]);
-
-    numThreads = atoi(argv[optind]);
-    numInnerLoops = (optind + 1 < argc) ? atoi(argv[optind + 1]) : 1;
-    numOuterLoops = (optind + 2 < argc) ? atoi(argv[optind + 2]) : 10000000;
-
-    if (verbose) {
-        printf("Using %s\n", useMutex ? "mutexes" : "spin locks");
-        printf("\tthreads: %d; outer loops: %d; inner loops: %d\n",
-                numThreads, numOuterLoops, numInnerLoops);
+     
+    int main(int argC, char* arg[]) 
+    {
+     
+    	int err;
+    	thread_t tid1, tid2;
+    	
+    	initlock(&spinlock);
+    	//----------------Create UDP server thread ----------------
+    	err = thread_create(&tid1, UDP_first_thread, NULL);
+    	if (err != 0) {
+    		perror(" fail to create thread ");
+    		return -1;
+    	}
+    	sleep(1);
+    	printf("created");
+    	err = thread_create(&tid2, UDP_second_thread, NULL);
+    	if (err != 0) {
+    		perror(" fail to create thread ");
+    		return -1;
+    	}
+       
+        thread_join(tid1, NULL);
+    	thread_join(tid2, NULL);
+    	
+    	printf("main end\n");
+     
+    	return 0;
     }
-
-    thread = calloc(numThreads, sizeof(thread_t));
-    if (thread == NULL)
-        printf("calloc");
-
-    if (useMutex) {
-        s = initmutexlock(&mtx);
-        if (s != 0)
-           // errExitEN(s, "pthread_mutex_init");
-            printf("hi");
-    } 
-
-    for (int j = 0; j < numThreads; j++) {
-        s = thread_create(&thread[j], threadFunc, NULL);
-        if (s != 0)
-           // errExitEN(s, "pthread_create");
-            printf("hi");
-    }
-
-    for (int j = 0; j < numThreads; j++) {
-        s = thread_join(thread[j], NULL);
-        if (s != 0)
-            printf("hi");
-            //errExitEN(s, "pthread_join");
-    }
-
-    if (verbose){
-        printf("glob = %d\n", glob);
-    }
-    exit(EXIT_SUCCESS);
-}
 
 #endif
