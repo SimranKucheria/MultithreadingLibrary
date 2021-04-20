@@ -12,7 +12,7 @@ static int numInnerLoops;
 static void *
 threadFunc(void *arg)
 {
-	printf("3");
+
     int s;
 
     for (int j = 0; j < numOuterLoops; j++) {

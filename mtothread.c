@@ -67,14 +67,22 @@ int gettid(){
 }
 void setretval(void){
 	current_thread->ret = current_thread->start_routine(current_thread->arg);
-	setitimer (ITIMER_VIRTUAL, 0, NULL);
+    timer.it_value.tv_sec = 0;
+    timer.it_value.tv_usec = 0;
+    timer.it_interval.tv_sec = 0;
+    timer.it_interval.tv_usec = 0;
+    setitimer (ITIMER_REAL, &timer, NULL);
 	current_thread->state=EXITED;
-	raise(SIGVTALRM);
+	raise(SIGALRM);
 }
 void scheduler(){
     /*should handle context switching(saving the context of current and loading 
     the context of the other thread) and getting another thread from ready queue*/
-    setitimer (ITIMER_VIRTUAL, 0, NULL);
+    timer.it_value.tv_sec = 0;
+    timer.it_value.tv_usec = 0;
+    timer.it_interval.tv_sec = 0;
+    timer.it_interval.tv_usec = 0;
+    setitimer (ITIMER_REAL, &timer, NULL);
     thread_s *t;
     if (current_thread->state != EXITED){
         if((getcontext(current_thread->context))==0){
@@ -83,13 +91,17 @@ void scheduler(){
                     if(current_thread->sig!=-1){
                         raise(current_thread->sig);
                     }
-                    setitimer (ITIMER_VIRTUAL, &timer, NULL);
+                    timer.it_value.tv_sec = 0;
+                    timer.it_value.tv_usec =2000;
+                    timer.it_interval.tv_sec = 0;
+                    timer.it_interval.tv_usec = 2000;
+                    setitimer (ITIMER_REAL, &timer, NULL);
                     return;
                 }	
                 else{	    
                     current_thread->state = RUNNABLE;
-                enqueue(readyqueue, current_thread);
-            }
+                    enqueue(readyqueue, current_thread);
+                }
         }
    }
    else{
@@ -100,37 +112,47 @@ void scheduler(){
 	current_thread = t;
 	current_thread->state = RUNNING;
 	current_thread->exec=1;
-	setitimer (ITIMER_VIRTUAL, &timer, NULL);
+    timer.it_value.tv_sec = 0;
+    timer.it_value.tv_usec =2000;
+    timer.it_interval.tv_sec = 0;
+    timer.it_interval.tv_usec = 2000;
+    setitimer (ITIMER_REAL, &timer, NULL);
 	setcontext(current_thread->context);
    }
    else{
-    	setitimer (ITIMER_VIRTUAL, 0, NULL);
+       
+    	timer.it_value.tv_sec = 0;
+        timer.it_value.tv_usec = 0;
+        timer.it_interval.tv_sec = 0;
+        timer.it_interval.tv_usec = 0;
+        setitimer (ITIMER_REAL, &timer, NULL);
     	return;
    }
 }
 /*function gets called initially*/
 void initialise(){
-    //set signal for SIGALARM
     struct sigaction handler;
-    
-    // memset(&handler, 0, sizeof handler);
+    memset(&handler, 0, sizeof(handler));
     handler.sa_handler = &scheduler;
     sigemptyset(&handler.sa_mask);
-    handler.sa_flags = SA_RESTART | SA_NODEFER;
-    sigaction(SIGVTALRM, &handler, NULL);
-    // ualarm(2,0);
+    handler.sa_flags =  SA_RESTART | SA_NODEFER;
+    sigaction(SIGALRM, &handler, NULL);
     timer.it_value.tv_sec = 0;
-    timer.it_value.tv_usec = 20;
+    timer.it_value.tv_usec =2000;
     timer.it_interval.tv_sec = 0;
-    timer.it_interval.tv_usec = 20;
-    setitimer (ITIMER_VIRTUAL, &timer, NULL);
+    timer.it_interval.tv_usec = 2000;
+    setitimer (ITIMER_REAL, &timer, NULL);
 
 }
 
 int thread_create(thread_t *thread, void *(*start_routine)(void *), void *arg){
     if (first_thread == 0)
     {
-        setitimer (ITIMER_VIRTUAL,0, NULL);
+        timer.it_value.tv_sec = 0;
+        timer.it_value.tv_usec = 0;
+        timer.it_interval.tv_sec = 0;
+        timer.it_interval.tv_usec = 0;
+        setitimer (ITIMER_REAL, &timer, NULL);
         first_thread = 1;
         thread_s *current_thread = (thread_s *)calloc(1, sizeof(thread_s));
         completed = (queue *)calloc(1, sizeof(queue));
@@ -143,7 +165,11 @@ int thread_create(thread_t *thread, void *(*start_routine)(void *), void *arg){
         initialise(); //setting the signal handler for the first time
         //timer bhi set karna hai
     }
-    setitimer (ITIMER_VIRTUAL,0, NULL);
+    timer.it_value.tv_sec = 0;
+    timer.it_value.tv_usec = 0;
+    timer.it_interval.tv_sec = 0;
+    timer.it_interval.tv_usec = 0;
+    setitimer (ITIMER_REAL, &timer, NULL);
     thread_s *t = (thread_s *)calloc(1, sizeof(thread_s));
     if(!t){
     	return EINVAL;
@@ -195,26 +221,38 @@ int thread_create(thread_t *thread, void *(*start_routine)(void *), void *arg){
 	        //         if(main_thread->sig!=-1){
 	        // 		raise(main_thread->sig);
 	        // 	}
-        	//         setitimer (ITIMER_VIRTUAL, &timer, NULL);
+        	//         setitimer (ITIMER_REAL, &timer, NULL);
         	// 	return 0;
         	// }
         	// else{
                
             // }
         // }
-        raise(SIGVTALRM);
-        fprintf(stderr,"going to main");
+        raise(SIGALRM);
+        // fprintf(stderr,"going to main");
         return 0;
     }
-    setitimer (ITIMER_VIRTUAL, &timer, NULL);
+    timer.it_value.tv_sec = 0;
+    timer.it_value.tv_usec =2000;
+    timer.it_interval.tv_sec = 0;
+    timer.it_interval.tv_usec = 2000;
+    setitimer (ITIMER_REAL, &timer, NULL);
     return 0;
 }
 int thread_join(thread_t thread, void **retval){
-    setitimer (ITIMER_VIRTUAL, 0, NULL);
+    timer.it_value.tv_sec = 0;
+    timer.it_value.tv_usec = 0;
+    timer.it_interval.tv_sec = 0;
+    timer.it_interval.tv_usec = 0;
+    setitimer (ITIMER_REAL, &timer, NULL);
     thread_s *retthread;
     if (current_thread && current_thread->t_id == thread)
     {
-        setitimer (ITIMER_VIRTUAL, &timer, NULL);
+        timer.it_value.tv_sec = 0;
+        timer.it_value.tv_usec =2000;
+        timer.it_interval.tv_sec = 0;
+        timer.it_interval.tv_usec = 2000;
+        setitimer (ITIMER_REAL, &timer, NULL);
         return EDEADLK;
     }
     retthread = getthread(readyqueue, thread);
@@ -222,7 +260,11 @@ int thread_join(thread_t thread, void **retval){
     {
         if (retthread->state == EXITED)
         {
-            setitimer (ITIMER_VIRTUAL, &timer, NULL);
+            timer.it_value.tv_sec = 0;
+            timer.it_value.tv_usec =2000;
+            timer.it_interval.tv_sec = 0;
+            timer.it_interval.tv_usec = 2000;
+            setitimer (ITIMER_REAL, &timer, NULL);
             return EINVAL;
         }
         while (1)
@@ -231,15 +273,18 @@ int thread_join(thread_t thread, void **retval){
             {
                 break;
             }
-            raise(SIGVTALRM);
+            raise(SIGALRM);
         }
         if (retval)
         {
             *retval = retthread->ret;
         }
-        setitimer (ITIMER_VIRTUAL, &timer, NULL);
+        timer.it_value.tv_sec = 0;
+        timer.it_value.tv_usec =2000;
+        timer.it_interval.tv_sec = 0;
+        timer.it_interval.tv_usec = 2000;
+        setitimer (ITIMER_REAL, &timer, NULL);
         return 0;
-        //Do we need to remove from queue
     }
     else
     {
@@ -250,34 +295,54 @@ int thread_join(thread_t thread, void **retval){
             {
 	            *retval = retthread->ret;
             }
-            setitimer (ITIMER_VIRTUAL, &timer, NULL);
+            timer.it_value.tv_sec = 0;
+            timer.it_value.tv_usec =2000;
+            timer.it_interval.tv_sec = 0;
+            timer.it_interval.tv_usec = 2000;
+            setitimer (ITIMER_REAL, &timer, NULL);
             return 0;
         }
         else
         {
-        	setitimer (ITIMER_VIRTUAL, &timer, NULL);
+            timer.it_value.tv_sec = 0;
+            timer.it_value.tv_usec =2000;
+            timer.it_interval.tv_sec = 0;
+            timer.it_interval.tv_usec = 2000;
+        	setitimer (ITIMER_REAL, &timer, NULL);
         	return ESRCH;
         }
     }
     //return 0;
 }
 void thread_exit(void *retval){
-    setitimer (ITIMER_VIRTUAL,0, NULL);
+    timer.it_value.tv_sec = 0;
+    timer.it_value.tv_usec = 0;
+    timer.it_interval.tv_sec = 0;
+    timer.it_interval.tv_usec = 0;
+    setitimer (ITIMER_REAL, &timer, NULL);
     if (current_thread)
     {
         current_thread->state = EXITED;
         current_thread->ret = retval;
     }
-    raise(SIGVTALRM);
+    raise(SIGALRM);
     return;
 }
 
 int thread_kill(thread_t thread, int sig){
-	setitimer (ITIMER_VIRTUAL,0, NULL);
+	timer.it_value.tv_sec = 0;
+    timer.it_value.tv_usec = 0;
+    timer.it_interval.tv_sec = 0;
+    timer.it_interval.tv_usec = 0;
+    setitimer (ITIMER_REAL, &timer, NULL);
 	if(sig){
 		if (current_thread->t_id==thread){
 			if(raise(sig)==0){
-				setitimer (ITIMER_VIRTUAL, &timer, NULL);
+                timer.it_value.tv_sec = 0;
+                timer.it_value.tv_usec =2000;
+                timer.it_interval.tv_sec = 0;
+                timer.it_interval.tv_usec = 2000;
+				setitimer (ITIMER_REAL, &timer, NULL);
 				return 0;
 			}
 		}
@@ -286,8 +351,13 @@ int thread_kill(thread_t thread, int sig){
 				thread_s *retthread;
 				retthread=getthread(readyqueue,thread);
 				retthread->sig=sig;
-				raise(SIGVTALRM);
-				setitimer (ITIMER_VIRTUAL, &timer, NULL);
+				raise(SIGALRM);
+                timer.it_value.tv_sec = 0;
+                timer.it_value.tv_usec =2000;
+                timer.it_interval.tv_sec = 0;
+                timer.it_interval.tv_usec = 2000;
+
+				setitimer (ITIMER_REAL, &timer, NULL);
 				return 0;
 			}
 			else{
@@ -295,11 +365,14 @@ int thread_kill(thread_t thread, int sig){
 			}
 		}
 	}
-	setitimer (ITIMER_VIRTUAL, &timer, NULL);
+    timer.it_value.tv_sec = 0;
+    timer.it_value.tv_usec =2000;
+    timer.it_interval.tv_sec = 0;
+    timer.it_interval.tv_usec = 2000;
+    setitimer (ITIMER_REAL, &timer, NULL);
 	return 0;
 }
-
-    #include <stdio.h>
+#include <stdio.h>
     #include <stdlib.h>
     #include <string.h>
     #include <unistd.h>
@@ -352,8 +425,8 @@ int thread_kill(thread_t thread, int sig){
     		return -1;
     	}
     	sleep(1);
-    	printf("created");
-    	err = thread_create(&tid2, UDP_second_thread, NULL);
+    	
+    		err = thread_create(&tid1, UDP_second_thread, NULL);
     	if (err != 0) {
     		perror(" fail to create thread ");
     		return -1;
