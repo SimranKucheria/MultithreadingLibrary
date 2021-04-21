@@ -51,9 +51,10 @@ main() {
  if ( status <  0)                                                              
     perror("thread_kill failed");                                              
                                                                                 
- status = thread_join( threadid, (void *)&thread_stat);                        
+ status = thread_join( threadid, (void *)&thread_stat);  
+
  if ( status <  0)                                                              
     perror("thread_join failed");                                              
-                                                                                
+ printf("%d",thread_stat);                                                                                
  exit(0);                                                                       
 }              
