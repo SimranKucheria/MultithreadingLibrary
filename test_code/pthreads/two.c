@@ -38,9 +38,9 @@ int main()
 {
     void *status;
     pthread_t thread1;
-    pthread_create(&thread1,NULL,newfunc, NULL);
+    pthread_create(&thread1,NULL,thread, NULL);
     pthread_join(thread1,&status);   
-    printf("%d",(int)status);
+    printf("%s",(char *)status);
     // thread_kill(thread1,SIGINT);
     return 0;
 }

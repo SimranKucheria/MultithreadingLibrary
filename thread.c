@@ -55,8 +55,12 @@ int thread_mutex_unlock(threadmutexlock *lock)
 void setretval(void *t)
 {
 	thread_s *thread;
+	void * ret;
 	thread = (thread_s *)t;
-	thread->ret = thread->start_routine(thread->arg);
+	ret = thread->start_routine(thread->arg);
+	if(ret && !thread->ret){
+		thread->ret=ret;
+	}
 	return;
 }
 int initlock(threadlock *lock)

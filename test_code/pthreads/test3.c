@@ -1,30 +1,35 @@
 #include <stdio.h>                                                              
 #include <unistd.h>
 #include <errno.h>                                                              
-#include<pthread.h>                                                                                                                      
+#include "pthread.h"                                                                                                                   
 #include <stdlib.h> 
 #include <string.h>
-int r1=200;
+
 void *threadFunc(void * args){
-  
-    int * num=args;
-    int number=*num;
-    printf("%d",*(int *)args);
-    pthread_exit(&r1);
+    int *ret;
+    if ((ret = (int*) malloc(20)) == NULL) {
+        perror("malloc() error");
+        exit(2);
+    }
+    *ret=200;
+    pthread_exit(ret);
 }
 
 int main(){
-    pthread_t thread[2];
-    int * thread_stat[2];
-    int  i=0;
-    while(i<2){
-        pthread_create(&thread[i],NULL,threadFunc,(void *)&i);
-        // pthread_join(thread[i],&thread_stat[i]);
-        i++;
+    pthread_t * thread;
+    thread = calloc(2, sizeof(pthread_t));
+    if (thread == NULL){
+        printf("calloc");
     }
-    pthread_join(thread[0],(void**)&thread_stat[0]);
-    pthread_join(thread[1],(void**)&thread_stat[1]);
-    printf("First thread value %d",*thread_stat[0]);
-    printf("Second thread value %d",*thread_stat[1]);
+    void *status;
+    void * status1;
+    int  i=0;
+
+    pthread_create(&thread[0],NULL,threadFunc,NULL);
+    pthread_create(&thread[1],NULL,threadFunc,NULL);  
+    pthread_join(thread[0],&status);
+    pthread_join(thread[1],&status1);
+    printf("First thread value %d\n",*(int *)status);
+    printf("Second thread value %d\n",*(int*)status1);
     return 0;
 }
