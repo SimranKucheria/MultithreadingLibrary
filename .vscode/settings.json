@@ -5,6 +5,7 @@
         "stdlib.h": "c",
         "types.h": "c",
         "futex.h": "c",
-        "string.h": "c"
+        "string.h": "c",
+        "system_error": "c"
     }
 }

@@ -25,7 +25,10 @@ char *stackTop;
 queue *q;
 static int flag = 0;
 int initmutexlock(threadmutexlock * lock){
-        lock  = (threadmutexlock *)calloc(1, sizeof(threadmutexlock));
+    lock  = (threadmutexlock *)calloc(1, sizeof(threadmutexlock));
+	if(lock==NULL){
+		return EAGAIN;
+	}
 	lock->value=0;
 	return 0;
 }
@@ -51,6 +54,9 @@ void setretval(void *t){
 }
 int initlock(threadlock * lock){
 	lock= (threadlock *)calloc(1, sizeof(threadlock));
+	if(lock==NULL){
+		return EAGAIN;
+	}
 	lock->value=0;
 	return 0;
 }
@@ -66,9 +72,15 @@ int thread_create(thread_t *thread, void *(*start_routine)(void *), void *arg){
 	if (flag == 0){
 		flag = 1;
 		q = (queue *)calloc(1, sizeof(queue));
+		if(q==NULL){
+			return EAGAIN;
+		}
 		initq(q);
 	}
 	thread_s *t = (thread_s *)calloc(1, sizeof(thread_s));
+	if(t==NULL){
+		return EAGAIN;
+	}
 	//  t->stack = (char *)malloc(STACKSIZE);
 	t->stack = mmap(NULL, STACKSIZE * sizeof(char), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS | MAP_STACK, -1, 0);
 	if (t->stack == NULL){
