@@ -23,8 +23,8 @@ int main(){
     if (thread == NULL){
         printf("calloc");
     }
-    void *status;
-    void * status1;
+    void *status=(void *)malloc(sizeof(void));
+    void * status1=(void *)malloc(sizeof(void));
     int  i=0;
 
     thread_create(&thread[0],threadFunc,NULL);

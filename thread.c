@@ -181,14 +181,23 @@ void thread_exit(void *retval)
 int thread_kill(thread_t thread, int sig)
 {
 	pid_t p_id = getpid();
-	if (sig)
+	thread_s *retthread;
+	retthread = getthread(q, thread);
+
+	if (retthread)
 	{
-		int ret = syscall(SYS_tgkill, p_id, thread, sig);
-		if (ret != 0)
+		if (sig)
 		{
-			return errno;
+			int ret = syscall(SYS_tgkill, p_id, thread, sig);
+			if (ret != 0)
+			{
+				return errno;
+			}
 		}
+		return 0;
 	}
-	return 0;
+	else{
+		return ESRCH;
+	}
 }
 #endif
