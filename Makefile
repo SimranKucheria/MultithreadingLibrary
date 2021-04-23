@@ -1,5 +1,5 @@
 CC    = gcc
-CFLAGS       = -fPIC -g -Wall -Werror 
+CFLAGS       = -fPIC -g -Wall -Werror -pedantic
 LDFLAGS      = -shared
 
 run: library

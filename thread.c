@@ -24,6 +24,7 @@
 char *stackTop;
 queue *q;
 static int flag = 0;
+
 int initmutexlock(threadmutexlock *lock)
 {
 	lock = (threadmutexlock *)calloc(1, sizeof(threadmutexlock));
@@ -55,7 +56,7 @@ int thread_mutex_unlock(threadmutexlock *lock)
 void setretval(void *t)
 {
 	thread_s *thread;
-	void * ret;
+	void *ret;
 	thread = (thread_s *)t;
 	ret = thread->start_routine(thread->arg);
 	thread_exit(ret);
@@ -110,7 +111,7 @@ int thread_create(thread_t *thread, void *(*start_routine)(void *), void *arg)
 	t->arg = arg;
 	t->state = RUNNING;
 	// t->t_id = clone((int(*)(void*))setretval, stackTop,CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_SIGHAND|SIGCHLD,(void *)t);
-	t->t_id = clone((int (*)(void *))setretval, stackTop, CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_SIGHAND | CLONE_THREAD | CLONE_PARENT_SETTID | CLONE_CHILD_CLEARTID | CLONE_SETTLS, (void *)t, &t->waittid, t, &t->waittid);
+	t->t_id = clone((int (*)(void *))setretval, stackTop, CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_SIGHAND | CLONE_THREAD | CLONE_PARENT_SETTID | CLONE_CHILD_CLEARTID | CLONE_SETTLS | 0, (void *)t, &t->waittid, t, &t->waittid);
 	if (t->t_id == -1)
 	{
 		free(t->stack);
@@ -129,7 +130,7 @@ int thread_join(thread_t thread, void **retval)
 
 	if (retthread)
 	{
-		
+
 		// if (retthread->state == EXITED)
 		// {
 		// 	printf("in here");
@@ -142,7 +143,7 @@ int thread_join(thread_t thread, void **retval)
 				break;
 			}
 		}
-		
+
 		retthread->state = EXITED;
 		if (retval)
 		{
@@ -166,11 +167,13 @@ void thread_exit(void *retval)
 	retthread = getthread(q, thread);
 	if (retthread)
 	{
-		if(retthread->state!=EXITED){
+		if (retthread->state != EXITED)
+		{
 			retthread->state = EXITED;
-			
-			if(retval){
-				
+
+			if (retval)
+			{
+
 				retthread->ret = retval;
 				// printf(" exit%d",*(int *)retthread->ret);
 			}
@@ -196,7 +199,8 @@ int thread_kill(thread_t thread, int sig)
 		}
 		return 0;
 	}
-	else{
+	else
+	{
 		return ESRCH;
 	}
 }

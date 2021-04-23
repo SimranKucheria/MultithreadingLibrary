@@ -5,23 +5,23 @@
 #include <unistd.h>
 #include "thread.h"
 int var = 0;
-static threadmutexlock mtx;
+static threadlock mtx;
 void *threadFunc(void *arg)
 {
 
-    thread_mutex_lock(&mtx);
+    thread_lock(&mtx);
     for (int k = 0; k < 10; k++)
         var++;
-    thread_mutex_unlock(&mtx);
+    thread_unlock(&mtx);
     return NULL;
 }
 void *threadSecFunc(void *arg)
 {
 
-    thread_mutex_lock(&mtx);
+    thread_lock(&mtx);
     for (int k = 0; k < 10; k++)
         var--;
-    thread_mutex_unlock(&mtx);
+    thread_unlock(&mtx);
     return NULL;
 }
 int main(int argc, char *argv[])
@@ -31,7 +31,7 @@ int main(int argc, char *argv[])
     thread = calloc(2, sizeof(thread_t));
     if (thread == NULL)
         printf("calloc");
-    initmutexlock(&mtx);
+    initlock(&mtx);
     thread_create(&thread[0], threadFunc, NULL);
     thread_create(&thread[1], threadSecFunc, NULL);
     thread_join(thread[0], NULL);
