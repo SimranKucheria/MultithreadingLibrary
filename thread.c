@@ -58,9 +58,7 @@ void setretval(void *t)
 	void * ret;
 	thread = (thread_s *)t;
 	ret = thread->start_routine(thread->arg);
-	if(ret && !thread->ret){
-		thread->ret=ret;
-	}
+	thread_exit(ret);
 	return;
 }
 int initlock(threadlock *lock)
@@ -128,12 +126,15 @@ int thread_join(thread_t thread, void **retval)
 {
 	thread_s *retthread;
 	retthread = getthread(q, thread);
+
 	if (retthread)
 	{
-		if (retthread->state == EXITED)
-		{
-			return EINVAL;
-		}
+		
+		// if (retthread->state == EXITED)
+		// {
+		// 	printf("in here");
+		// 	return EINVAL;
+		// }
 		while (1)
 		{
 			if (retthread->waittid == 0)
@@ -141,14 +142,14 @@ int thread_join(thread_t thread, void **retval)
 				break;
 			}
 		}
+		
 		retthread->state = EXITED;
 		if (retval)
 		{
-			//printf("%d",(int)retthread->ret);
+			// printf(" Join%d",*(int *)retthread->ret);
 			*retval = retthread->ret;
 			return 0;
 		}
-		//Do we need to remove from queue
 	}
 	else
 	{
@@ -165,8 +166,15 @@ void thread_exit(void *retval)
 	retthread = getthread(q, thread);
 	if (retthread)
 	{
-		retthread->state = EXITED;
-		retthread->ret = retval;
+		if(retthread->state!=EXITED){
+			retthread->state = EXITED;
+			
+			if(retval){
+				
+				retthread->ret = retval;
+				// printf(" exit%d",*(int *)retthread->ret);
+			}
+		}
 	}
 	return;
 }
