@@ -5,7 +5,7 @@
 #include <stdlib.h>
 void *simpleFunc()
 {
-    printf("Thread Created Successfully\n");
+    printf("Thread Created Successfully");
     return NULL;
 }
 
