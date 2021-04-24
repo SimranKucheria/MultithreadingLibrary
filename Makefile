@@ -27,4 +27,4 @@ mtothread.o:
 	$(CC) -c ${CFLAGS} thread.h mtothread.c 
 
 clean: 
-	sudo rm -f la.out libotothread.so libmtothread.so thread.o mtothread.o thread.h.gch /usr/lib/libotothread.so /usr/lib/libmtothread.so test1 test2 test3 test4 test5 test6 test7 test8 test9 test10 test11 test12 test13
+	sudo rm -f la.out libotothread.so libmtothread.so thread.o mtothread.o thread.h.gch /usr/lib/libotothread.so /usr/lib/libmtothread.so test1 test2 test3 test4 test5 test6 test7 test8 test9 test10 test11 test12 test13 output.txt

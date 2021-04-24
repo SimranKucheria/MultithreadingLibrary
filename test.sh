@@ -16,8 +16,8 @@ if [ $? -ne 139 ];
 then echo "Test$i passed";
 fi
 done
-gcc test_code/MT/test9.c -o test9 -lotothread
 echo "Enter a number";
+gcc test_code/MT/test9.c -o test9 -lotothread
 ./test9 >> output.txt 
 if [ $? -ne 139 ]; 
 then echo "Test9 passed";
@@ -40,8 +40,8 @@ if [ $? -ne 139 ];
 then echo "Test$i passed";
 fi
 done
+echo "Enter a number here";
 gcc test_code/MT/test9.c -o test9 -lotothread
-echo "Enter a number";
 ./test9 >> output.txt 
 if [ $? -ne 139 ]; 
 then echo "Test9 passed";
