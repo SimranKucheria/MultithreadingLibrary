@@ -20,7 +20,7 @@
 #include <sys/time.h>
 #include <stdatomic.h>
 #include <linux/futex.h>
-#define STACKSIZE ((size_t)8192 * 1024)
+#define STACKSIZE ((size_t)8192 * 2048)
 char *stackTop;
 queue *q;
 static int flag = 0;
@@ -53,14 +53,14 @@ int thread_mutex_unlock(threadmutexlock *lock)
 	return 0;
 }
 
-void setretval(void *t)
+int setretval(void *t)
 {
 	thread_s *thread;
 	void *ret;
 	thread = (thread_s *)t;
 	ret = thread->start_routine(thread->arg);
 	thread_exit(ret);
-	return;
+	return 0;
 }
 int initlock(threadlock *lock)
 {
@@ -100,7 +100,7 @@ int thread_create(thread_t *thread, void *(*start_routine)(void *), void *arg)
 	{
 		return EAGAIN;
 	}
-	//  t->stack = (char *)malloc(STACKSIZE);
+	//t->stack = (char *)malloc(STACKSIZE);
 	t->stack = mmap(NULL, STACKSIZE * sizeof(char), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS | MAP_STACK, -1, 0);
 	if (t->stack == NULL)
 	{
@@ -204,30 +204,5 @@ int thread_kill(thread_t thread, int sig)
 		return ESRCH;
 	}
 }
-#include <errno.h>
-#include <stdio.h>
-#include <unistd.h>
-#include <stdlib.h>
-void *simpleFunc()
-{
-    printf("Thread Created Successfully\n");
-    return NULL;
-}
 
-int main()
-{
-    thread_t thread[10];
-    for (int i = 0; i < 10; i++)
-    {
-        printf("%d", i);
-        thread_create(&thread[i], simpleFunc, NULL);
-        printf("%d", i);
-    }
-    for (int j = 0; j < 10; j++)
-    {
-        thread_join(thread[j], NULL);
-        printf("Joining thread\n");
-    }
-    return 0;
-}
 #endif

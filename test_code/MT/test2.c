@@ -12,25 +12,39 @@ typedef struct data
 
 void *simpleFunc(void *args)
 {
-    struct data *threadargs = (struct data *)args;
-    printf("Thread %d with message - %s \n", threadargs->num, threadargs->message);
+    printf("Thread %d with message - %s \n", ((data *)args)->num, ((data *)args)->message);
+    return NULL;
+}
+
+void *simpleFunc1(void *args)
+{
+    printf("Thread %d with message - %s \n", ((data *)args)->num, ((data *)args)->message);
+    return NULL;
+}
+
+void *simpleFunc2(void *args)
+{
+    printf("Thread %d with message - %s \n", ((data *)args)->num, ((data *)args)->message);
     return NULL;
 }
 
 int main()
 {
-    thread_t thread[10];
-    for (int i = 0; i < 10; i++)
+    int i;
+    thread_t thread[3];
+    data *data1 = (data *)malloc(sizeof(data));
+    if (!data1)
     {
-        struct data *data = (struct data *)malloc(sizeof(struct data));
-        if (!data)
-        {
-            perror("Malloc error in test");
-            return 0;
-        }
-        data->message = "Received argument of thread ";
-        data->num = i;
-        thread_create(&thread[i], simpleFunc, (void *)data);
+        perror("Malloc error in test");
+        return 0;
+    }
+    data1->message = "Received argument of thread ";
+    data1->num = 66;
+    thread_create(&thread[0], simpleFunc, (void *)data1);
+    thread_create(&thread[1], simpleFunc1, (void *)data1);
+    thread_create(&thread[2], simpleFunc2, (void *)data1);
+    for (i = 0; i < 3; i++)
+    {
         thread_join(thread[i], NULL);
     }
     return 0;

@@ -176,7 +176,7 @@ int thread_create(thread_t *thread, void *(*start_routine)(void *), void *arg)
         timer.it_interval.tv_usec = 0;
         setitimer(ITIMER_REAL, &timer, NULL);
         first_thread = 1;
-        thread_s *current_thread = (thread_s *)calloc(1, sizeof(thread_s));
+        current_thread = (thread_s *)calloc(1, sizeof(thread_s));
         completed = (queue *)calloc(1, sizeof(queue));
         readyqueue = (queue *)calloc(1, sizeof(queue));
         if (!current_thread || !completed || !readyqueue)
@@ -225,7 +225,7 @@ int thread_create(thread_t *thread, void *(*start_routine)(void *), void *arg)
     if (!main_thread_set)
     {
         main_thread_set = 1;
-        thread_s *main_thread = (thread_s *)calloc(1, sizeof(thread_s));
+        main_thread = (thread_s *)calloc(1, sizeof(thread_s));
         if (!main_thread)
             return EINVAL;
         main_thread->context = (ucontext_t *)calloc(1, sizeof(ucontext_t));

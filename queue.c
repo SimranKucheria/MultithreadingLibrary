@@ -47,7 +47,9 @@ thread_s *dequeue(queue *q)
 }
 int isQfull(queue *q)
 {
-	return 0;
+	if (q)
+		return 0;
+	return -1;
 }
 
 int isQempty(queue *q)
@@ -87,7 +89,7 @@ thread_s *getthread(queue *q, thread_t thread)
 	return NULL;
 }
 
-int makeheadthread(queue *q,thread_t athread)
+int makeheadthread(queue *q, thread_t athread)
 {
 	nodeq *temp;
 	nodeq *t1;
@@ -103,33 +105,38 @@ int makeheadthread(queue *q,thread_t athread)
 		{
 			if (athread == temp->thread->t_id)
 			{
-				t1=temp;
+				t1 = temp;
 				break;
 			}
-			prev=temp;
+			prev = temp;
 			temp = temp->next;
 		}
-		if (temp==q->tail && athread == temp->thread->t_id){
-				t1=temp;
+		if (temp == q->tail && athread == temp->thread->t_id)
+		{
+			t1 = temp;
 		}
 	}
-	if (t1==q->head){
+	if (t1 == q->head)
+	{
 		return 1;
 	}
-	if (t1==NULL){
+	if (t1 == NULL)
+	{
 		return 0;
 	}
-	if (t1->next==NULL){
-		prev->next=NULL;
-		q->tail=prev;
-		t1->next=q->head;
-		q->head=t1;
+	if (t1->next == NULL)
+	{
+		prev->next = NULL;
+		q->tail = prev;
+		t1->next = q->head;
+		q->head = t1;
 		return 1;
 	}
-	if(t1->next){
-		prev->next=t1->next;
-		t1->next=q->head;
-		q->head=t1;
+	if (t1->next)
+	{
+		prev->next = t1->next;
+		t1->next = q->head;
+		q->head = t1;
 		return 1;
 	}
 	return 0;

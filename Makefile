@@ -1,5 +1,5 @@
 CC    = gcc
-CFLAGS       = -fPIC -g -Wall -Werror -pedantic
+CFLAGS       = -fPIC -g -Wall -Werror -Wextra -Wshadow -Wpedantic 
 LDFLAGS      = -shared
 
 run: library
@@ -27,4 +27,4 @@ mtothread.o:
 	$(CC) -c ${CFLAGS} thread.h mtothread.c 
 
 clean: 
-	sudo rm -f la.out libotothread.so libmtothread.so thread.o mtothread.o thread.h.gch /usr/lib/libotothread.so /usr/lib/libmtothread.so test1 test2 test3 test4 test5 test6 test7 test8 test9 test10 test11 test12 test13 output.txt
+	sudo rm -f a.out libotothread.so libmtothread.so thread.o mtothread.o thread.h.gch /usr/lib/libotothread.so /usr/lib/libmtothread.so test1 test2 test3 test4 test5 test6 test7 test8 test9 test10 test11 test12 test13 output.txt test_code/MT/a.out
