@@ -3,7 +3,14 @@
 echo "Testing OTO\n"
 for i in 1 2 3 4 5 6 7 8  10 11 12 13
 do
-    gcc test_code/MT/test$i.c -o test$i -lotothread
+    if [ $i -eq 4 ]
+        then
+            gcc test_code/MT/test$i.c -o test$i -lotothread -Wno-pointer-to-int-cast
+    else
+        gcc test_code/MT/test$i.c -o test$i -lotothread
+    
+    fi
+
     if [ $i -eq 5 ]
         then 
             ./test$i 8 >> output.txt 
@@ -25,7 +32,13 @@ done
 echo "\nTesting MTO\n"
 for i in 1 2 3 4 5 6 7 8  10 11 12 13
 do
-    gcc test_code/MT/test$i.c -o test$i -lmtothread
+    if [ $i -eq 4 ]
+        then
+            gcc test_code/MT/test$i.c -o test$i -lmtothread -Wno-pointer-to-int-cast
+    else
+        gcc test_code/MT/test$i.c -o test$i -lmtothread
+    
+    fi
     if [ $i -eq 5 ]
         then 
             ./test$i 8 >> output.txt 
