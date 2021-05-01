@@ -22,7 +22,7 @@ int main(){
         data->message="Received argument of thread ";
         data->num=i;
         pthread_create(&thread[i],NULL,simpleFunc,(void *)data);
-        pthread_join(thread[i],NULL);
+        pthread_join(thread[i],NULL) ;
     }
     return 0;
 }

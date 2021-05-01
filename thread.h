@@ -1,4 +1,4 @@
-
+/*Header file for thread.c & mtothread.c */
 #include <ucontext.h>
 #include <stdio.h>
 #include <sys/types.h>
@@ -58,3 +58,5 @@ int thread_kill(thread_t , int );
 int initmutexlock(threadmutexlock *);
 int thread_mutex_lock(threadmutexlock *);
 int thread_mutex_unlock(threadmutexlock *);  
+/*Thread structure -> Get a basic idea of what needs to be done
+(https://www.schaertl.me/posts/a-bare-bones-user-level-thread-library)*/

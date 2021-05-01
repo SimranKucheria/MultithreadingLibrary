@@ -1,3 +1,4 @@
+/* Header file for Queue.c */
 #include "thread.h"
 typedef struct nodeq{
 	thread_s * thread;

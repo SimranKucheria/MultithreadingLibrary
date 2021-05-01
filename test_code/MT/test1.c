@@ -1,8 +1,12 @@
+/* 
+Tests Join & Create
+*/
 #include <errno.h>
-#include "../../thread.h"
+#include "thread.h"
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
+
 void *simpleFunc()
 {
     printf("In fn\n");

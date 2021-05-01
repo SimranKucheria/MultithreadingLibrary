@@ -6,7 +6,8 @@
         "types.h": "c",
         "futex.h": "c",
         "string.h": "c",
-        "system_error": "c"
+        "system_error": "c",
+        "thread.h": "c"
     },
     "C_Cpp.errorSquiggles": "Enabled"
 }

@@ -1,7 +1,17 @@
+/*Linked List implementation of Queue */
+
 #include "queue.h"
 #include <stdlib.h>
 #include <stdio.h>
 
+/*initialises queue*/
+void initq(queue *q)
+{
+	q->head = NULL;
+	q->tail = NULL;
+}
+
+/*Enqueues threads into a queue data structure*/
 void enqueue(queue *q, thread_s *thread)
 {
 	nodeq *newnode = (nodeq *)malloc(sizeof(nodeq));
@@ -27,7 +37,7 @@ void enqueue(queue *q, thread_s *thread)
 		}
 	}
 }
-
+/*Dequeues threads from a queue data structure*/
 thread_s *dequeue(queue *q)
 {
 	if (q->head == NULL)
@@ -45,24 +55,20 @@ thread_s *dequeue(queue *q)
 		return x;
 	}
 }
+/* Checks if the queue is full  */
 int isQfull(queue *q)
 {
 	if (q)
 		return 0;
 	return -1;
 }
-
+/* Checks if the queue is empty  */
 int isQempty(queue *q)
 {
 	return q->head == NULL;
 }
 
-void initq(queue *q)
-{
-	q->head = NULL;
-	q->tail = NULL;
-}
-
+/* Takes a thread id and returns a pointer pointing to the thread structure */
 thread_s *getthread(queue *q, thread_t thread)
 {
 	nodeq *temp;
@@ -88,7 +94,7 @@ thread_s *getthread(queue *q, thread_t thread)
 	}
 	return NULL;
 }
-
+/*Takes a thread ID and makes the thread structure the head of the queue*/
 int makeheadthread(queue *q, thread_t athread)
 {
 	nodeq *temp;

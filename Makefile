@@ -13,7 +13,7 @@ library: libotothread.so libmtothread.so
 	sudo chmod 0755 /usr/lib/libmtothread.so
 	sudo ldconfig
 
-libotothread.so: thread.o
+libotothread.so:  thread.o
 	$(CC) ${LDFLAGS} -o $@ thread.o
 
 thread.o:  

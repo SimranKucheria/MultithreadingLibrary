@@ -1,3 +1,6 @@
+/*
+Tests Create & Join with arguments
+*/
 #include <stdio.h>
 #include <unistd.h>
 #include <errno.h>

@@ -1,7 +1,10 @@
+/*
+Tests thread exit 
+*/
 #include <stdio.h>                                                              
 #include <unistd.h>
 #include <errno.h>                                                              
-#include "../../thread.h"                                                                                                                   
+#include "thread.h"                                                                                                                   
 #include <stdlib.h> 
 #include <string.h>
 

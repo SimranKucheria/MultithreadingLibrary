@@ -1,9 +1,11 @@
-
+/*
+Tests Mutex Lock
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include "../../thread.h"
+#include "thread.h"
 int var = 0;
 static threadmutexlock mtx;
 void * threadFunc(void *arg)
