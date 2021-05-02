@@ -38,16 +38,17 @@ int main()
     data *data1 = (data *)malloc(sizeof(data));
     if (!data1)
     {
-        // perror("Malloc error in test");
+        perror("Malloc error in test");
         return 0;
     }
     data1->message = "Received argument of thread ";
     data1->num = 66;
     thread_create(&thread[0], simpleFunc, (void *)data1);
-    thread_join(thread[0], NULL);
     thread_create(&thread[1], simpleFunc1, (void *)data1);
-    thread_join(thread[1], NULL);
     thread_create(&thread[2], simpleFunc2, (void *)data1);
-    thread_join(thread[2], NULL);
+    for (i = 0; i < 3; i++)
+    {
+        thread_join(thread[i], NULL);
+    }
     return 0;
 }

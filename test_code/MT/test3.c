@@ -11,7 +11,7 @@ Tests thread exit
 void *threadFunc(void * args){
     int *ret;
 
-    if ((ret = (int*) malloc(sizeof(int))) == NULL) {
+    if ((ret = (int*) malloc(20)) == NULL) {
         perror("malloc() error");
         exit(2);
     }

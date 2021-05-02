@@ -43,22 +43,21 @@ int main()
 
     thread_create(&thread[0], simpleFunc, NULL);
     printf("Thread Created Successfully\n");
-    thread_join(thread[0], NULL);
     thread_create(&thread[1], simpleFunc1, NULL);
     printf("Thread Created Successfully\n");
-    thread_join(thread[1], NULL);
     thread_create(&thread[2], simpleFunc2, NULL);
     printf("Thread Created Successfully\n");
-    thread_join(thread[0], NULL);
-    thread_join(thread[2], NULL);
     thread_create(&thread[3], simpleFunc3, NULL);
     printf("Thread Created Successfully\n");
-    thread_join(thread[3], NULL);
     thread_create(&thread[4], simpleFunc4, NULL);
     printf("Thread Created Successfully\n");
-    thread_join(thread[4], NULL);
     thread_create(&thread[5], simpleFunc5, NULL);
     printf("Thread Created Successfully\n");
-    thread_join(thread[5], NULL);
+
+    for (int j = 0; j < 6; j++)
+    {
+        thread_join(thread[j], NULL);
+        printf("Joining thread\n");
+    }
     return 0;
 }
